@@ -1,0 +1,9 @@
+name = "QuadRules"
+uuid = "810c9ea8-d2f7-4325-8ec0-dc8b26474921"
+authors = ["Simon Praetorius <simon.praetorius@tu-dresden.de>"]
+version = "0.1.0"
+
+[deps]
+ArgCheck = "dce04be8-c92d-5529-be00-80e4d2c0e197"
+EnumX = "4e289a0a-7415-4d19-859d-a7e5c4648b56"
+YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
