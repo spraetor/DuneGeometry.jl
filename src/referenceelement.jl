@@ -1,4 +1,3 @@
-
 struct ReferenceElement{T<:AbstractFloat}
     geometryType::GeometryType
     coordinates::Vector{Vector{T}}
@@ -17,6 +16,7 @@ struct ReferenceElement{T<:AbstractFloat}
         end
     end
 end
+
 
 "Obtain the type of subentity (i,c)"
 function type(r::ReferenceElement, i::Int, c::Int)
@@ -37,6 +37,7 @@ end
 "Obtain the type of this reference element"
 type(r::ReferenceElement) = r.geometryType
 
+
 """
     size(g, c)
 
@@ -48,6 +49,7 @@ Number of subentities of codimension `c` in the GeometryType `g`.
 """
 size(g::GeometryType, c::Int) = geometryTypeSizes[basicType(g)][g.dim][c]
 
+
 """
     size(r, c)
 
@@ -58,6 +60,7 @@ Number of subentities of codimension `c` in the ReferenceElement `r`.
 - `c::Int`: Codimension whose size is requested.
 """
 size(r::ReferenceElement, c::Int) = size(r.geometryType, c)
+
 
 """
     size(r, i, c, cc)
@@ -76,6 +79,7 @@ a subentity of `E`. If `cc<c` this number is zero.
 - `cc::Int`: Codimension whose size is desired (`0 <= cc <= dim(r)`)
 """
 size(r::ReferenceElement, i::Int, c::Int, cc::Int) = size(type(r, i, c), cc - c)
+
 
 """
     subEntity(i,c,ii,cc)
@@ -96,3 +100,52 @@ to the current reference element.
 - `cc:Int`: Codimension of subentity S (c <= cc <= dim)
 """
 subEntity(r::ReferenceElement, i::Int, c::Int, ii::Int, cc::Int)
+
+
+
+
+function initialize{T<:Real}(r::ReferenceElement{T}, topologyId::UInt)
+  @argcheck topologyId < numTopologies(r.dim)
+
+  # set up subentities
+  for codim = 0:r.dim
+    s = size(topologyId, dim, codim)
+    resize!(r.info_[codim+1], s)
+
+    for i = 1:s
+      info_[codim+1][i].initialize(topologyId, codim, i)
+    end
+  end
+
+  # compute corners
+  numVertices = size(r,dim)
+  resize!(r.baryCenters_[r.dim+1], numVertices)
+  referenceCorners(topologyId, dim, r.baryCenters_[r.dim+1])
+
+  # compute barycenters
+  for codim = 0:r.dim
+    resize!(baryCenters_[codim+1], size(r, codim))
+    for i = 1:size(r, codim)
+        r.baryCenters_[codim+1][i] = Base.zeros(T,(r.dim,))
+        numCorners = size(r, i, codim, dim)
+        for j = 1:numCorners
+            baryCenters_[codim+1][i] += baryCenters_[r.dim+1][subEntity(i, codim, j, dim)]
+            baryCenters_[codim+1][i] *= 1::T / T( numCorners )
+        end
+    end
+  end
+
+  # compute reference element volume
+  r.volume_ = referenceVolume(T, topologyId, dim)
+
+  # compute integration outer normals
+  if dim > 0
+    resize!(integrationNormals_, size(r, 1))
+    referenceIntegrationOuterNormals(topologyId, dim, integrationNormals_)
+  end
+
+  # set up geometries
+  for i = 1:r.dim
+    createGeometries(r, i, r.geometries_)
+  end
+end

@@ -1,5 +1,10 @@
 using ArgCheck
 
+@enum TopologyConstruction begin
+  pyramidConstruction = 0
+  prismConstruction = 1
+end
+
 """
   numTopologies(dim)
 

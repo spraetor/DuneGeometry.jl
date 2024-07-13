@@ -2,12 +2,11 @@ module QuadRules
 
 # import ...
 
+include("type.impl.jl")
 include("type.jl")
-export BasicType
-export toBasicType
-export GeometryType
-export isVertex, isLine, isTriangle, isQuadrilateral, isTetrahedron, isHexahedron, isPyramid, isPrism, isSimplex, isCube
-export dim, size, name
+
+include("referenceelement.impl.jl")
+include("referenceelement.jl")
 
 # export ...
 

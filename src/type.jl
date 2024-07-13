@@ -20,7 +20,7 @@ basicType(s::String) = Dict(
     "extended" => BasicType.extended,
     "none" => BasicType.none)[s]
 
-# "Convert a BasicType into a string."
+"Convert a BasicType into a string."
 function Base.string(basicType::BasicType.T)
     if basicType == BasicType.simplex
         "simplex"
@@ -37,14 +37,11 @@ function Base.string(basicType::BasicType.T)
     end
 end
 
-include("type.impl.jl")
-
-"Unique label for each type of entities that can occur in grid."
+"Unique label for each type of entities that can occur in a grid."
 struct GeometryType
     dim::UInt8          # Dimension of the element.
     none::Bool          # Is the geometry of BasicType.none or BasicType.extended.
-    topologyId::UInt32  # An identifier of the topology. If the geometry is of BasicType.none, this id must be 0, 
-                        # if the geometry is of BasicType.extended, this id must be 1.
+    topologyId::UInt32  # An identifier of the topology. If the geometry is of BasicType.none, this id must be 0.
 
     "Default constructor, not initializing anything."
     GeometrType() = new(0,true,0)
