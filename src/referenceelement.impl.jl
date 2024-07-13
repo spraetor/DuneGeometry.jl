@@ -22,19 +22,19 @@ geometryTypeSizes = Dict(
 )
 
 
-function size(topologyId::UInt, dim::Int, codim::Int)::UInt
+function _size(topologyId::UInt, dim::Int, codim::Int)::UInt
   @argcheck (dim >= 0) && (topologyId < numTopologies(dim))
   @argcheck (0 <= codim) && (codim <= dim)
-  
+
   if codim > 0
     baseId = baseTopologyId(topologyId, dim)
-    m = size(baseId, dim-1, codim-1)
+    m = _size(baseId, dim-1, codim-1)
     if isPrism(topologyId, dim)
-      n = (codim < dim ? size( baseId, dim-1, codim ) : 0)
+      n = (codim < dim ? _size( baseId, dim-1, codim ) : 0)
       (n + 2*m)::UInt
     else
       @assert isPyramid(topologyId, dim)
-      n = (codim < dim ? size( baseId, dim-1, codim ) : 1)
+      n = (codim < dim ? _size( baseId, dim-1, codim ) : 1)
       (m + n)::UInt
     end
   else
@@ -44,15 +44,15 @@ end
 
 
 function subTopologyId(topologyId::UInt, dim::Int, codim::Int, i::UInt)::UInt
-  @argcheck i < size(topologyId, dim, codim)
+  @argcheck i < _size(topologyId, dim, codim)
   mydim = dim - codim
 
   if codim > 0
     baseId = baseTopologyId(topologyId, dim)
-    m = size(baseId, dim-1, codim-1)
+    m = _size(baseId, dim-1, codim-1)
 
     if isPrism(topologyId, dim)
-      n = (codim < dim ? size(baseId, dim-1, codim) : 0)
+      n = (codim < dim ? _size(baseId, dim-1, codim) : 0)
       if i < n
         return subTopologyId(baseId, dim-1, codim, i) | (prismConstruction::UInt << (mydim - 1))
       else
@@ -76,11 +76,11 @@ end
 
 function subTopologyNumbering(topologyId::UInt, dim::Int, codim::Int, i::UInt, subcodim::Int, out::AbstractVector{UInt})
   @argcheck (codim >= 0) && (subcodim >= 0) && (codim + subcodim <= dim)
-  @argcheck i < size(topologyId, dim, codim)
-  @argcheck length(out) == size(subTopologyId(topologyId, dim, codim, i), dim-codim, subcodim)
+  @argcheck i <= _size(topologyId, dim, codim)
+  @argcheck length(out) == _size(subTopologyId(topologyId, dim, codim, i), dim-codim, subcodim)
 
   if codim == 0
-    out = range(0,length=length(out))
+    out = Base.range(0,length=length(out))
   elseif subcodim == 0
     @assert length(out) == 1
     out[1] = i
@@ -88,28 +88,28 @@ function subTopologyNumbering(topologyId::UInt, dim::Int, codim::Int, i::UInt, s
     beginOut = 1
     endOut = length(out)
     baseId = baseTopologyId(topologyId, dim)
-    m = size(baseId, dim-1, codim-1)
-    mb = size(baseId, dim-1, codim+subcodim-1)
-    nb = (codim + subcodim < dim ? size(baseId, dim-1, codim+subcodim) : 0)
+    m = _size(baseId, dim-1, codim-1)
+    mb = _size(baseId, dim-1, codim+subcodim-1)
+    nb = (codim + subcodim < dim ? _size(baseId, dim-1, codim+subcodim) : 0)
 
     if isPrism(topologyId, dim)
-      n = size(baseId, dim-1, codim)
+      n = _size(baseId, dim-1, codim)
       if i < n
         subId = subTopologyId(baseId, dim-1, codim, i)
 
         beginBase = beginOut
         if codim + subcodim < dim
-          beginBase = beginOut + size(subId, dim-codim-1, subcodim)
+          beginBase = beginOut + _size(subId, dim-codim-1, subcodim)
           subTopologyNumbering(baseId, dim-1, codim, i, subcodim, view(out,beginOut:beginBase))
         end
 
-        ms = size(subId, dim-codim-1, subcodim-1)
+        ms = _size(subId, dim-codim-1, subcodim-1)
         subTopologyNumbering(baseId, dim-1, codim, i, subcodim-1, view(out,beginBase:beginBase+ms))
         for j = 1:ms
           out[beginBase + j - 1] += nb
           out[beginBase + j + ms - 1] = out[beginBase + j -1] + mb
         end
-      else  
+      else
         s = (i < n+m ? 0 : 1)
         subTopologyNumbering(baseId, dim-1, codim-1, i-(n+s*m), subcodim, out)
         for j in eachIndex(out)
@@ -122,15 +122,15 @@ function subTopologyNumbering(topologyId::UInt, dim::Int, codim::Int, i::UInt, s
       if i < m
         subTopologyNumbering(baseId, dim-1, codim-1, i, subcodim, out)
       else
-        ubId = subTopologyId(baseId, dim-1, codim, i-m)
-        ms = size(subId, dim-codim-1, subcodim-1)
+        subId = subTopologyId(baseId, dim-1, codim, i-m)
+        ms = _size(subId, dim-codim-1, subcodim-1)
 
         subTopologyNumbering(baseId, dim-1, codim, i-m, subcodim-1, view(out,beginOut:beginOut+ms))
         if codim+subcodim < dim
           subTopologyNumbering(baseId, dim-1, codim, i-m, subcodim, view(out,beginOut+ms:endOut))
           for j = (beginOut + ms):endOut
             out[j] += mb
-          end      
+          end
         else
           out[beginOut + ms] = mb
         end
@@ -140,14 +140,14 @@ function subTopologyNumbering(topologyId::UInt, dim::Int, codim::Int, i::UInt, s
 end
 
 
-function checkInside{T<:Real}(topologyId::UInt, dim::Int, x::AbstractVector{T}, tolerance::T, factor::T = 1::T)::Bool
-  @argcheck (dim >= 0) && (dim <= cdim)
+function _checkInside{T<:Real}(topologyId::UInt, dim::Int, x::AbstractVector{T}, tolerance::T, factor::T = 1::T)::Bool
+  @argcheck 0 <= dim <= cdim
   @argcheck topologyId < numTopologies(dim)
 
   if dim > 0
     baseFactor = (isPrism(topologyId, dim) ? factor : factor - x[dim])
     if (x[dim] > -tolerance) && (factor - x[dim] > -tolerance)
-      return checkInside(baseTopologyId(topologyId, dim), dim-1, x, tolerance, baseFactor)
+      return _checkInside(baseTopologyId(topologyId, dim), dim-1, x, tolerance, baseFactor)
     else
       return false
     end
@@ -158,12 +158,12 @@ end
 
 
 function referenceCorners{T<:Real}(topologyId::UInt, dim::Int, corners::AbstractVector{AbstractArray{T,1}})::UInt
-  @argcheck (dim >= 0) && (dim <= length(corners[1]))
+  @argcheck 0 <= dim <= length(corners[1])
   @argcheck topologyId < numTopologies(dim)
 
   if dim > 0
     nBaseCorners = referenceCorners(baseTopologyId(topologyId, dim), dim-1, corners)
-    @assert nBaseCorners == size(baseTopologyId(topologyId, dim), dim-1, dim-1)
+    @assert nBaseCorners == _size(baseTopologyId(topologyId, dim), dim-1, dim-1)
 
     if isPrism(topologyId, dim)
       for j = 1:nBaseCorners
@@ -199,9 +199,9 @@ referenceVolume(::Type{T}, topologyId::UInt, dim::Int)::T where {T<:Real} = 1::T
 
 function referenceOrigins{T<:Real}(topologyId::UInt, dim::Int, codim::Int, origins::AbstractVector{AbstractArray{T,1}})::UInt
   cdim = length(origins[1])
-  @argcheck (dim >= 0) && (dim <= cdim)
+  @argcheck 0 <= dim <= cdim
   @argcheck topologyId < numTopologies( dim )
-  @argcheck (codim >= 0) && (codim <= dim)
+  @argcheck 0 <= codim <= dim
 
   if codim > 0
     baseId = baseTopologyId(topologyId, dim)
@@ -230,24 +230,24 @@ function referenceOrigins{T<:Real}(topologyId::UInt, dim::Int, codim::Int, origi
 end
 
 
-function referenceEmbeddings{t<:Real}(topologyId::UInt, dim::Int, codim::Int, 
+function referenceEmbeddings{t<:Real}(topologyId::UInt, dim::Int, codim::Int,
                                       origins::AbstractVector{AbstractArray{T,1}},
                                       jacobianTransposeds::AbstractVector{AbstractArray{T,2}})::UInt
   cdim = length(origins[1])
   mydim = Base.size(jacobianTransposeds,1)
   @argcheck cdim == Base.size(jacobianTransposeds,2)
-  @argcheck (0 <= codim) && (codim <= dim) && (dim <= cdim)
-  @argcheck (dim - codim <= mydim) && (mydim <= cdim)
+  @argcheck 0 <= codim <= dim <= cdim
+  @argcheck dim - codim <= mydim <= cdim
   @argcheck topologyId < numTopologies(dim)
 
-  if (0 < codim) && (codim <= dim)
+  if 0 < codim <= dim
     baseId = baseTopologyId(topologyId, dim)
     if isPrism( topologyId, dim )
       n = (codim < dim ? referenceEmbeddings(baseId, dim-1, codim, origins, jacobianTransposeds) : 0)
       jacobianTransposeds[1:n][dim-codim,dim] = 1::T
 
-      m = referenceEmbeddings(baseId, dim-1, codim-1, 
-        view(origins,(n+1):length(origins)), 
+      m = referenceEmbeddings(baseId, dim-1, codim-1,
+        view(origins,(n+1):length(origins)),
         view(jacobianTransposeds,(n+1):length(jacobianTransposeds)))
 
       for j = 1:m
@@ -264,8 +264,8 @@ function referenceEmbeddings{t<:Real}(topologyId::UInt, dim::Int, codim::Int,
         jacobianTransposeds[m+1] = zeros(T, Base.size(jacobianTransposeds[m+1]))
         return m+1
       elseif codim < dim
-        n = referenceEmbeddings(baseId, dim-1, codim, 
-          view(origins,(m+1):length(origins)), 
+        n = referenceEmbeddings(baseId, dim-1, codim,
+          view(origins,(m+1):length(origins)),
           view(jacobianTransposeds,(m+1):length(jacobianTransposeds)))
         for j = 1:n
           jacobianTransposeds[m+j][dim-codim,:] = -origins[m+j]
@@ -288,12 +288,12 @@ function referenceEmbeddings{t<:Real}(topologyId::UInt, dim::Int, codim::Int,
 end
 
 
-function referenceIntegrationOuterNormals{T<:Real}(topologyId::UInt, dim::Int, 
+function referenceIntegrationOuterNormals{T<:Real}(topologyId::UInt, dim::Int,
                                                    origins::AbstractVector{AbstractArray{T,1}},
                                                    normals::AbstractVector{AbstractArray{T,1}})::UInt
   cdim = length(origins[1])
   @argcheck cdim == length(normals[1])
-  @argcheck (dim > 0) && (dim <= cdim)
+  @argcheck 0 < dim <= cdim
   @argcheck topologyId < numTopologies(dim)
 
   if dim > 1
@@ -308,7 +308,7 @@ function referenceIntegrationOuterNormals{T<:Real}(topologyId::UInt, dim::Int,
     else
       normals[1] = zeros(T,Base.size(normals[1]))
       normals[1][dim] = -1::T;
-      numBaseFaces = referenceIntegrationOuterNormals(baseId, dim-1, 
+      numBaseFaces = referenceIntegrationOuterNormals(baseId, dim-1,
         view(origins,2:length(origins)), view(normals,2:length(normals)))
       for i = 1:numBaseFaces
         normals[i+1][dim] = dot(normals[i+1], origins[i+1])
@@ -317,7 +317,7 @@ function referenceIntegrationOuterNormals{T<:Real}(topologyId::UInt, dim::Int,
     end
   else
     for i = 1:2
-      normals[i] = zeros(T,Base.size(normals[i+1]))
+      normals[i] = zeros(T,Base.size(normals[i]))
       normals[i][1] = T(2*(i-1) - 1)
     end
     return 2
@@ -327,14 +327,89 @@ end
 
 function referenceIntegrationOuterNormals{T<:Real}(topologyId::UInt, dim::Int,
                                                    normals::AbstractVector{AbstractArray{T,1}})::UInt
-  cdim = length(normals[1])                                     
-  @argcheck (dim > 0) && (dim <= cdim)
+  cdim = length(normals[1])
+  @argcheck 0 < dim <= cdim
 
-  origins = [Vector{T}(undef, cdim) for _ in 1:size(topologyId, dim, 1)]
+  origins = [Vector{T}(undef, cdim) for _ in 1:_size(topologyId, dim, 1)]
   referenceOrigins(topologyId, dim, 1, origins)
 
   numFaces = referenceIntegrationOuterNormals(topologyId, dim, origins, normals)
-  @assert numFaces == size(topologyId, dim, 1)
+  @assert numFaces == _size(topologyId, dim, 1)
 
   return numFaces
+end
+
+
+function maxSubEntityCount(dim::Int)::Int
+  maxCount = 0::Int
+  for codim = 0:dim
+    maxCount = Base.max(maxCount, Base.binomial(dim,codim) * (1 << codim))
+  end
+  return maxCount
+end
+
+
+SubEntityFlags = BitArray{1}
+
+struct SubEntityInfo
+  dimension::Int
+
+  numbering_::Vector{UInt}
+  offset_::Vector{UInt}
+  type_::GeometryType
+  containsSubentity_::Vector{SubEntityFlags}
+
+  maxSubEntityCount_::Int
+
+  "Constructor"
+  SubEntityInfo(dim::Int) = new(dim, undef,   # dimension, numbering_
+    Vector{UInt}(undef, dim+2),               # offset_
+    undef,                                    # type_
+    Vector{SubEntityFlags}(undef, dim+1)      # containsSubentity_
+    maxSubEntityCount(dim))                   # maxSubEntityCount_
+end
+
+
+function size(self::SubEntityInfo, cc::Int)::UInt
+  @argcheck 0 <= cc <= dim
+  return self.offset_[cc+2] - self.offset_[cc+1]
+end
+
+
+function number(self::SubEntityInfo, ii::Int, cc::Int)::UInt
+  @argcheck 0 < ii <= size(self, cc)
+  return self.numbering_[self.offset_[cc+1] + ii]
+end
+
+
+function numbers(self::SubEntityInfo, cc::Int)::UInt
+  return (Base.view(self.numbering_, self.offset_[cc+1]:self.offset_[cc+2]), self.containsSubentity_[cc+1])
+end
+
+
+function initialize(self::SubEntityInfo, topologyId::UInt, codim::Int, i::Int)
+  dim = self.dimension
+  subId = subTopologyId(topologyId, dim, codim, i)
+  self.type_ = GeometryType(subId, dim-codim)
+
+  # compute offsets
+  self.offset_ = Base.zeros(UInt, Base.size(self.offset_))
+  for cc = codim:dim
+    self.offset_[cc+2] = self.offset_[cc+1] + _size(subId, dim-codim, cc-codim)
+  end
+
+  # compute subnumbering
+  self.numbering_ = Vector(undef, self.offset_[dim+2])
+  for cc = codim:dim
+    subTopologyNumbering(topologyId, dim, codim, i, cc-codim,
+      Base.view(self.numbering_, self.offset_[cc+1]:self.offset_[cc+2]))
+  end
+
+  # initialize containsSubentity lookup-table
+  for cc = 0:dim
+    self.containsSubentity_[cc+1] = Base.falses(self.maxSubEntityCount_)
+    for idx = 1:size(self,cc)
+      containsSubentity_[cc+1][number(self,idx,cc)] = true
+    end
+  end
 end
