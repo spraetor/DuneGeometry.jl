@@ -17,7 +17,7 @@ Obtain the number of topologies of a given dimension `dim`.
 # Arguments
 - `dim::Int`: Dimension.
 """
-numTopologies(dim::Int) = (1 << dim)::UInt
+numTopologies(dim::Integer) = (1 << dim)
 
 
 """
@@ -33,7 +33,7 @@ Check whether a pyramid construction was used to create a given codimension `cod
 function isPyramid(topologyId::UInt32, dim::Integer, codim::Integer = 0)::Bool
   @argcheck (dim > 0) && (topologyId < numTopologies(dim))
   @argcheck 0 <= codim < dim
-  ((topologyId & ~1) & (1u << (dim-codim-1))) == 0
+  ((topologyId & ~1) & (1 << (dim-codim-1))) == 0
 end
 
 
@@ -50,7 +50,7 @@ Check whether a prism construction was used to create a given codimension `codim
 function isPrism(topologyId::UInt32, dim::Integer, codim::Integer = 0)::Bool
   @argcheck (dim > 0) && (topologyId < numTopologies(dim))
   @argcheck 0 <= codim < dim
-  ((topologyId | 1) & (1u << (dim-codim-1))) != 0
+  ((topologyId | 1) & (1 << (dim-codim-1))) != 0
 end
 
 
@@ -64,10 +64,10 @@ Obtain the base topology of a given codimension `codim`.
 - `dim::Integer`: Dimension of the topology
 - `codim::Integer`: Codimension for which the information is desired (defaults to 0)
 """
-function baseTopologyId(topologyId::UInt32, dim::Integer, codim::Integer = 1)
-  @argcheck (dim >= 0) && (topologyId < numTopologies( dim ))
+function baseTopologyId(topologyId::UInt32, dim::Integer, codim::Integer = 1)::UInt32
+  @argcheck (dim >= 0) && (topologyId < numTopologies(dim))
   @argcheck (0 <= codim) && (codim <= dim)
-  topologyId & ((1u << (dim-codim)) - 1)
+  topologyId & ((1 << (dim-codim)) - 1)
 end
 
 end # module TypesImpl

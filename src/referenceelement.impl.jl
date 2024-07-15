@@ -26,27 +26,27 @@ function size(topologyId::UInt32, dim::Integer, codim::Integer)
 end
 
 
-function subTopologyId(topologyId::UInt32, dim::Integer, codim::Integer, i::Integer)
-  @argcheck i < size(topologyId, dim, codim)
+function subTopologyId(topologyId::UInt32, dim::Integer, codim::Integer, i::Integer)::UInt32
+  @argcheck 0 < i <= size(topologyId, dim, codim)
   mydim = dim - codim
 
   if codim > 0
     baseId = TypesImpl.baseTopologyId(topologyId, dim)
     m = size(baseId, dim-1, codim-1)
 
-    if isPrism(topologyId, dim)
+    if TypesImpl.isPrism(topologyId, dim)
       n = (codim < dim ? size(baseId, dim-1, codim) : 0)
-      if i < n
-        return subTopologyId(baseId, dim-1, codim, i) | (prismConstruction::UInt << (mydim - 1))
+      if i <= n
+        return subTopologyId(baseId, dim-1, codim, i) | (UInt(TypesImpl.prismConstruction) << (mydim - 1))
       else
-        return subTopologyId(baseId, dim-1, codim-1, (i < n+m ? i-n : i-(n+m)) )
+        return subTopologyId(baseId, dim-1, codim-1, (i <= n+m ? i-n : i-(n+m)) )
       end
     else
       @assert TypesImpl.isPyramid(topologyId, dim)
-      if i < m
+      if i <= m
         return subTopologyId(baseId, dim-1, codim-1, i)
       elseif codim < dim
-        return subTopologyId(baseId, dim-1, codim, i-m) | (pyramidConstruction::UInt << (mydim - 1))
+        return subTopologyId(baseId, dim-1, codim, i-m) | (UInt(TypesImpl.pyramidConstruction) << (mydim - 1))
       else
         return 0;
       end
@@ -65,7 +65,7 @@ function subTopologyNumbering!(topologyId::UInt32, dim::Integer, codim::Integer,
   @argcheck length(out) == size(subTopologyId(topologyId, dim, codim, i), dim-codim, subcodim)
 
   if codim == 0
-    out = Base.range(0,length=length(out))
+    out = Base.range(1,length=length(out))
   elseif subcodim == 0
     @assert length(out) == 1
     out[1] = i
@@ -79,7 +79,7 @@ function subTopologyNumbering!(topologyId::UInt32, dim::Integer, codim::Integer,
 
     if TypesImpl.isPrism(topologyId, dim)
       n = size(baseId, dim-1, codim)
-      if i < n
+      if i <= n
         subId = subTopologyId(baseId, dim-1, codim, i)
 
         beginBase = beginOut
@@ -97,7 +97,7 @@ function subTopologyNumbering!(topologyId::UInt32, dim::Integer, codim::Integer,
           out[beginBase + j + ms - 1] = out[beginBase + j -1] + mb
         end
       else
-        s = (i < n+m ? 0 : 1)
+        s = (i <= n+m ? 0 : 1)
         subTopologyNumbering!(baseId, dim-1, codim-1, i-(n+s*m), subcodim, out)
         for j in eachIndex(out)
           out[j] += nb + s*mb
@@ -106,7 +106,7 @@ function subTopologyNumbering!(topologyId::UInt32, dim::Integer, codim::Integer,
     else
       @assert TypesImpl.isPyramid(topologyId, dim)
 
-      if i < m
+      if i <= m
         subTopologyNumbering!(baseId, dim-1, codim-1, i, subcodim, out)
       else
         subId = subTopologyId(baseId, dim-1, codim, i-m)
@@ -334,7 +334,7 @@ function referenceIntegrationOuterNormals!(topologyId::UInt32, dim::Integer,
 end
 
 
-maxSubEntityCount(dim::Integer) = max(binomial.(dim,0:dim) .* (1 .<< 0:dim))
+maxSubEntityCount(dim::Integer) = max((binomial.(dim,0:dim) .* (1 .<< (0:dim)))...)
 
 SubEntityFlags = BitArray{1}
 
@@ -349,18 +349,25 @@ struct SubEntityInfo
   containsSubentity_::Vector{SubEntityFlags}
   maxSubEntityCount_::Int
 
-  "Constructor"
-  SubEntityInfo(dim::Integer) = new(dim,      # dimension
-    undef,                                    # numbering_
-    Vector{UInt}(undef, dim+2),               # offset_
-    undef,                                    # type_
-    Vector{SubEntityFlags}(undef, dim+1),     # containsSubentity_
-    maxSubEntityCount(dim))                   # maxSubEntityCount_
+  # Constructor
+  SubEntityInfo(type::GeometryType) = new(type.dim,      # dimension
+    Vector{UInt}(),                             # numbering_
+    Vector{UInt}(undef, type.dim+2),            # offset_
+    type,                                       # type_
+    Vector{SubEntityFlags}(undef, type.dim+1),  # containsSubentity_
+    maxSubEntityCount(type.dim))                # maxSubEntityCount_
+end
+
+function SubEntityInfo(type::GeometryType, codim::Integer, i::Integer)
+  subId = subTopologyId(type.topologyId, type.dim, codim, i)
+  info = SubEntityInfo(GeometryType(subId, type.dim-codim))
+  initialize!(info, type.topologyId, codim, i)
+  return info
 end
 
 
 function size(self::SubEntityInfo, cc::Integer)
-  @argcheck 0 <= cc <= dim
+  @argcheck 0 <= cc <= self.dimension
   return self.offset_[cc+2] - self.offset_[cc+1]
 end
 
@@ -379,10 +386,9 @@ end
 function initialize!(self::SubEntityInfo, topologyId::UInt32, codim::Integer, i::Integer)
   dim = self.dimension
   subId = subTopologyId(topologyId, dim, codim, i)
-  self.type_ = GeometryType(subId, dim-codim)
 
   # compute offsets
-  self.offset_ .= 0
+  self.offset_[1] = 1
   for cc = codim:dim
     self.offset_[cc+2] = self.offset_[cc+1] + size(subId, dim-codim, cc-codim)
   end
@@ -390,14 +396,16 @@ function initialize!(self::SubEntityInfo, topologyId::UInt32, codim::Integer, i:
   # compute subnumbering
   resize!(self.numbering_, self.offset_[dim+2])
   for cc = codim:dim
-    subTopologyNumbering(topologyId, dim, codim, i, cc-codim,
-      Base.view(self.numbering_, self.offset_[cc+1]:self.offset_[cc+2]))
+    subTopologyNumbering!(topologyId, dim, codim, i, cc-codim,
+      Base.view(self.numbering_, self.offset_[cc+1]:self.offset_[cc+2]-1))
   end
 
   # initialize containsSubentity lookup-table
   for cc = 0:dim
     self.containsSubentity_[cc+1] = Base.falses(self.maxSubEntityCount_)
-    self.containsSubentity_[cc+1][number.(self,1:size(self,cc),cc)] .= true
+    for i = 1:size(self,cc)
+      self.containsSubentity_[cc+1][number(self,i,cc)] = true
+    end
   end
   return nothing
 end

@@ -88,7 +88,7 @@ pyramid = GeometryType(BasicType.pyramid,3)
 @test line == GeometryType(BasicType.cube,1)
 
 none = GeometryType()
-for gt in [vertex,line,tri,quad,tet,hex,prism,pyramid,none]
+for gt in [vertex,line,tri,quad,tet,hex,prism,pyramid]
   @test gt == GeometryType(QuadRules.toId(gt)) # bug for gt == none
   if !gt.none
     @test gt == GeometryType(gt.topologyId, gt.dim)

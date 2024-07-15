@@ -5,10 +5,12 @@ export ReferenceElement
 # methods
 export size,subEntity,subEntities,type,position,checkInside,geometry,integrationOuterNormal
 
+using ArgCheck
+using ..Types
+
 # Import some implementation details
 import ..ReferenceElementsImpl
-
-using ArgCheck
+import ..TypesImpl
 
 # Some type aliases
 Coordinate{T<:Real} = Vector{T}
@@ -31,22 +33,25 @@ provided.
 struct ReferenceElement{T<:Real}
     dimension::Int
 
-    "The reference element volume."
+    # private members
     volume_::T
-
     baryCenters_::Vector{Vector{Coordinate{T}}}
     integrationNormals_::Vector{Coordinate{T}}
-
     geometries_::Vector{Vector{ReferenceElementGeometry{T}}}
-
     info_::Vector{Vector{ReferenceElementsImpl.SubEntityInfo}}
 
-    "Constructor"
-    ReferenceElement(dim::Int) = new{T}(dim, 0::T,                  # dimension, volume_
-        Vector{Vector{Coordinate{T}}}(undef, dim+1),                # baryCenters_
-        undef,                                                      # integrationNormals_
-        Vector{Vector{ReferenceElementGeometry{T}}}(undef, dim+1),  # geometries_
-        Vector{Vector{ReferenceElementsImpl.SubEntityInfo}}(undef, dim+1))                # info_
+    # constructors
+    ReferenceElement{T}(dim::Integer) where {T<:Real} = new(Int(dim), T(0),
+            [Vector{Coordinate{T}}() for _ in 1:dim+1],
+            Vector{Coordinate{T}}(),
+            [Vector{ReferenceElementGeometry{T}}() for _ in 1:dim+1],
+            [Vector{ReferenceElementsImpl.SubEntityInfo}() for _ in 1:dim+1])
+end
+
+function ReferenceElement{T}(type::GeometryType) where {T<:Real}
+    r = ReferenceElement{T}(type.dim)
+    initialize!(r, type)
+    return r
 end
 
 
@@ -61,7 +66,7 @@ Number of subentities of codimension `c` in the ReferenceElement `r`.
 """
 function size(self::ReferenceElement{Real}, c::Integer)
     @argcheck 0 <= c <= self.dimension
-    return ReferenceElementsImpl.size(self.info_[c+1])
+    return length(self.info_[c+1])
 end
 
 
@@ -235,17 +240,33 @@ function integrationOuterNormal(self::ReferenceElement{T}, face::Integer)::Vecto
 end
 
 
-function initialize!(self::ReferenceElement{T}, topologyId::UInt32) where {T<:Real}
-  @argcheck topologyId < TypesImpl.numTopologies(self.dim)
+function subRefElement(self::ReferenceElement{T}, i::Integer, cc::Integer) where {T<:Real}
+  return cc == 0 ? self : ReferenceElement{T}(self.dimension-cc, type(self,i,cc))
+end
 
+function createGeometries!(self::ReferenceElement{T}, codim::Integer) where {T<:Real}
+  dim = self.dimension
+  s = size(self, codim)
+  origins = [ Vector{T}(undef,dim) for _ = 1:s ]
+  jacobianTransposeds = [ Matrix{T}(undef, dim-codim, dim) for _ in 1:s ]
+  ReferenceElementsImpl.referenceEmbeddings!(type(self).topologyId, dim, codim, origins, jacobianTransposeds)
+
+  sizehint!(self.geometries_[codim], s)
+  for i = 1:s
+    g = ReferenceElementGeometry{T}(subRefElement(self,i,codim), origins[i], jacobianTransposeds[i])
+    self.geometries_[codim].append!(g)
+  end
+end
+
+function initialize!(self::ReferenceElement{T}, type::GeometryType) where {T<:Real}
   # set up subentities
   dim = self.dimension
   for codim = 0:dim
-    s = ReferenceElementsImpl.size(topologyId, dim, codim)
+    s = ReferenceElementsImpl.size(type.topologyId, dim, codim)
     resize!(self.info_[codim+1], s)
 
     for i = 1:s
-        ReferenceElementsImpl.initialize!(self.info_[codim+1][i], topologyId, codim, i)
+        self.info_[codim+1][i] = ReferenceElementsImpl.SubEntityInfo(type, codim, i)
     end
   end
 
@@ -277,8 +298,8 @@ function initialize!(self::ReferenceElement{T}, topologyId::UInt32) where {T<:Re
   end
 
   # set up geometries
-  for i = 1:dim
-    # ReferenceElementsImpl.createGeometries(self, i, self.geometries_)
+  for codim = 0:dim
+    ReferenceElementsImpl.createGeometries!(self, codim)
   end
 end
 
