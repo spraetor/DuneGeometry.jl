@@ -1,4 +1,1 @@
-using QuadRules
-using Test
-
-println("Testing...")
+include("type.jl")

@@ -1,3 +1,11 @@
+module Types
+
+# types
+export BasicType,GeometryType
+
+# methods
+export basicType,toId,isVertex,isLine,isTriangle,isQuadrilateral,isTetrahedron,isHexahedron,isPyramid,isPrism,isSimplex,isCube,isConical,isPrismatic
+
 using EnumX
 
 "Each entity can be tagged by one of these basic types plus its space dimension."
@@ -7,7 +15,7 @@ using EnumX
     prism = 3       # Four sided pyramid in three dimensions
     pyramid = 4     # Prism element in three dimensions
     extended = 5    # Other, more general topology, representable as topologyId
-    none = 6        # Even more general topology, cannot be specified by a topologyId. Two GeometryTypes with 'none' 
+    none = 6        # Even more general topology, cannot be specified by a topologyId. Two GeometryTypes with 'none'
                     # type are equal if and only if they have the same dimension.
 end
 
@@ -25,7 +33,7 @@ function Base.string(basicType::BasicType.T)
     if basicType == BasicType.simplex
         "simplex"
     elseif basicType == BasicType.cube
-        "Cube"
+        "cube"
     elseif basicType == BasicType.prism
         "prism"
     elseif basicType == BasicType.pyramid
@@ -44,7 +52,7 @@ struct GeometryType
     topologyId::UInt32  # An identifier of the topology. If the geometry is of BasicType.none, this id must be 0.
 
     "Default constructor, not initializing anything."
-    GeometrType() = new(0,true,0)
+    GeometryType() = new(0,true,0)
 
     "Reconstruct a Geometry type from an Id."
     GeometryType(id::UInt64) = new(id & 0xFF, id & 0x100, id >> 32)
@@ -61,9 +69,9 @@ struct GeometryType
             new(dim,false,0)
         elseif basicType == BasicType.cube
             new(dim,false,((dim>1) ? ((1 << dim) - 1) : 0))
-        elseif basicType == BasicType.prism
-            new(3,false,0b0011)
         elseif basicType == BasicType.pyramid
+            new(3,false,0b0011)
+        elseif basicType == BasicType.prism
             new(3,false,0b0101)
         elseif basicType == BasicType.none
             new(dim,true,0)
@@ -71,35 +79,10 @@ struct GeometryType
             throw(ArgumentError("GeometryType cannot be constructed from a BasicType.extended."))
         end
     end
-
-    # "Map number of vertices to GeometryType."
-    # function GeometryType(num::Int, dim::Int)
-    #     if dim == 0
-    #         GeometryType(BasicType.simplex, 0)
-    #     elseif dim == 1
-    #         GeometryType(BasicType.simplex, 1)
-    #     elseif dim == 2
-    #         if num == 3
-    #             GeometryType(BasicType.simplex, 2)
-    #         elseif num == 4
-    #             GeometryType(BasicType.cube, 2)
-    #         end
-    #     elseif dim == 3
-    #         if num == 4
-    #             GeometryType(BasicType.simplex, 3)
-    #         elseif num == 5
-    #             GeometryType(BasicType.pyramid, 3)
-    #         elseif num == 6
-    #             GeometryType(BasicType.prism, 3)
-    #         elseif num == 8
-    #             GeometryType(BasicType.cube, 3)
-    #         end
-    #     end
-    # end
 end # GeometryType
 
 "Construct an Id representing this GeometryType"
-toId(g::GeometryType) = g.dim | (g.none::UInt64 << 8) | (g.topologyId::UInt64 << 32)
+toId(g::GeometryType)::UInt64 = UInt64(g.dim) | (UInt64(g.none) << 8) | (UInt64(g.topologyId) << 32)
 
 "Return the BasicType associated to the Geometry"
 function basicType(g::GeometryType)
@@ -139,7 +122,7 @@ isPrismatic(g::GeometryType) = !g.none && (( (g.topologyId | 1) & (1 << (g.dim-1
 isPrismatic(g::GeometryType, step::Int) = !g.none && (( (g.topologyId | 1) & (1 << step)) != 0)
 
 "Check for equality. This method knows that in dimension 0 and 1 all BasicTypes are equal."
-Base.:(==)(g1::GeometryType, g2::GeometryType) = (g1.none == g2.none) && 
+Base.:(==)(g1::GeometryType, g2::GeometryType) = (g1.none == g2.none) &&
     (g1.none || ( (g1.dim == g2.dim) && ((g1.topologyId >> 1) == (g2.topologyId >> 1)) ))
 
 "Convert a GeometryType into a string."
@@ -181,3 +164,5 @@ function Base.show(io::IO, g::GeometryType)
         show(io, "(other [" * bitstring(g.topologyId) * "], " * string(g.dim) * ")")
     end
 end
+
+end # module Types

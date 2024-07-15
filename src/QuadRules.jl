@@ -4,10 +4,10 @@ module QuadRules
 
 include("type.impl.jl")
 include("type.jl")
+using .Types
 
 include("referenceelement.impl.jl")
 include("referenceelement.jl")
-
-# export ...
+using .ReferenceElements
 
 end # module QuadRules
