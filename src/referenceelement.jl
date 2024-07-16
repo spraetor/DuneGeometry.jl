@@ -16,8 +16,9 @@ import ..TypesImpl
 Coordinate{T<:Real} = Vector{T}
 
 # Placeholder for a geometry type
-struct ReferenceElementGeometry{T<:Real} end
-
+struct ReferenceElementGeometry{T<:Real}
+    ReferenceElementGeometry{T}() where {T<:Real} = new()
+end
 
 """
     ReferenceElement{T}
@@ -41,7 +42,8 @@ struct ReferenceElement{T<:Real}
     info_::Vector{Vector{ReferenceElementsImpl.SubEntityInfo}}
 
     # constructors
-    ReferenceElement{T}(dim::Integer) where {T<:Real} = new(Int(dim), T(0),
+    ReferenceElement{T}(topologyId::UInt32, dim::Integer) where {T<:Real} = new(Int(dim),
+            ReferenceElementsImpl.referenceVolume(T, topologyId, dim),
             [Vector{Coordinate{T}}() for _ in 1:dim+1],
             Vector{Coordinate{T}}(),
             [Vector{ReferenceElementGeometry{T}}() for _ in 1:dim+1],
@@ -49,11 +51,15 @@ struct ReferenceElement{T<:Real}
 end
 
 function ReferenceElement{T}(type::GeometryType) where {T<:Real}
-    r = ReferenceElement{T}(type.dim)
+    r = ReferenceElement{T}(type.topologyId, type.dim)
     initialize!(r, type)
     return r
 end
 
+function ReferenceElementGeometry(refElem::ReferenceElement{T}, origin::AbstractVector{T},
+                                  jacobianTransposed::AbstractArray{T,2}) where {T<:Real}
+    return ReferenceElementGeometry{T}()
+end
 
 """
     size(r, c)
@@ -64,7 +70,7 @@ Number of subentities of codimension `c` in the ReferenceElement `r`.
 - `r::ReferenceElement`: The reference element.
 - `c::Int`: Codimension whose size is requested.
 """
-function size(self::ReferenceElement{Real}, c::Integer)
+function size(self::ReferenceElement{T}, c::Integer) where {T<:Real}
     @argcheck 0 <= c <= self.dimension
     return length(self.info_[c+1])
 end
@@ -86,7 +92,7 @@ a subentity of `E`. If `cc<c` this number is zero.
 - `c::Int`: Codimension of subentity `E` (`0 <= c <= dim(r)`)
 - `cc::Int`: Codimension whose size is desired (`0 <= cc <= dim(r)`)
 """
-function size(self::ReferenceElement{Real}, i::Integer, c::Integer, cc::Integer)
+function size(self::ReferenceElement{T}, i::Integer, c::Integer, cc::Integer) where {T<:Real}
     @argcheck 0 < i <= size(self, c)
     return ReferenceElementsImpl.size(self.info_[c+1][i], cc)
 end
@@ -110,7 +116,7 @@ to the current reference element.
 - `ii:Int`: Number of subentity S (with respect to E)
 - `cc:Int`: Codimension of subentity S (c <= cc <= dim)
 """
-function subEntity(self::ReferenceElement{Real}, i::Integer, c::Integer, ii::Integer, cc::Integer)
+function subEntity(self::ReferenceElement{T}, i::Integer, c::Integer, ii::Integer, cc::Integer) where {T<:Real}
     @argcheck 0 < i <= size(self, c)
     return ReferenceElementsImpl.number(self.info_[c+1][i], ii, cc )
 end
@@ -134,7 +140,7 @@ respect to E. For `0<=cc<c` this will return an empty range.
 - `c::Int`: Codimension of subentity E
 - `cc:Int`: Codimension of subentity S (c <= cc <= dim)
 """
-function subEntities(self::ReferenceElement{Real}, i::Integer, c::Integer, cc::Integer)
+function subEntities(self::ReferenceElement{T}, i::Integer, c::Integer, cc::Integer) where {T<:Real}
     @argcheck 0 < i <= size(self, c)
     return ReferenceElementsImpl.numbers(self.info_[c+1][i], cc)
 end
@@ -153,14 +159,16 @@ reference element. This method returns the GeometryType of E.
 - `i::Int`: Number of subentity E (0 < i <= size( c ))
 - `c::Int`: Codimension of subentity E
 """
-function type(self::ReferenceElement{Real}, i::Integer, c::Integer)::GeometryType
+function type(self::ReferenceElement{T}, i::Integer, c::Integer)::GeometryType where {T<:Real}
     @argcheck 0 < i <= size(self, c)
-    return ReferenceElementsImpl.type(self.info_[c+1][i])
+    return self.info_[c+1][i].type
 end
 
 
 "Obtain the type of this reference element"
-type(self::ReferenceElement{Real})::GeometryType = type(self, 0, 0)
+function type(self::ReferenceElement{T})::GeometryType where {T<:Real}
+    return type(self, 1, 0)
+end
 
 
 """
@@ -241,7 +249,7 @@ end
 
 
 function subRefElement(self::ReferenceElement{T}, i::Integer, cc::Integer) where {T<:Real}
-  return cc == 0 ? self : ReferenceElement{T}(self.dimension-cc, type(self,i,cc))
+  return cc == 0 ? self : ReferenceElement{T}(type(self,i,cc))
 end
 
 function createGeometries!(self::ReferenceElement{T}, codim::Integer) where {T<:Real}
@@ -251,10 +259,9 @@ function createGeometries!(self::ReferenceElement{T}, codim::Integer) where {T<:
   jacobianTransposeds = [ Matrix{T}(undef, dim-codim, dim) for _ in 1:s ]
   ReferenceElementsImpl.referenceEmbeddings!(type(self).topologyId, dim, codim, origins, jacobianTransposeds)
 
-  sizehint!(self.geometries_[codim], s)
+  resize!(self.geometries_[codim+1], s)
   for i = 1:s
-    g = ReferenceElementGeometry{T}(subRefElement(self,i,codim), origins[i], jacobianTransposeds[i])
-    self.geometries_[codim].append!(g)
+    self.geometries_[codim+1][i] = ReferenceElementGeometry(subRefElement(self,i,codim), origins[i], jacobianTransposeds[i])
   end
 end
 
@@ -272,34 +279,33 @@ function initialize!(self::ReferenceElement{T}, type::GeometryType) where {T<:Re
 
   # compute corners
   numVertices = size(self,dim)
-  resize!(self.baryCenters_[dim+1], numVertices)
-  ReferenceElementsImpl.referenceCorners!(topologyId, dim, self.baryCenters_[dim+1])
+  self.baryCenters_[dim+1] = [Vector{T}(undef,dim) for _ = 1:numVertices]
+  ReferenceElementsImpl.referenceCorners!(type.topologyId, dim, self.baryCenters_[dim+1])
 
   # compute barycenters
   for codim = 0:dim
-    resize!(baryCenters_[codim+1], size(self, codim))
+    self.baryCenters_[codim+1] = [Vector{T}(undef,dim) for _ = 1:size(self, codim)]
     for i = 1:size(self, codim)
         self.baryCenters_[codim+1][i] = Base.zeros(T,(dim,))
         numCorners = size(self, i, codim, dim)
         for j = 1:numCorners
-            baryCenters_[codim+1][i] += baryCenters_[dim+1][subEntity(self, i, codim, j, dim)]
-            baryCenters_[codim+1][i] *= 1::T / T( numCorners )
+            self.baryCenters_[codim+1][i] += self.baryCenters_[dim+1][subEntity(self, i, codim, j, dim)]
+            self.baryCenters_[codim+1][i] *= T(1) / T( numCorners )
         end
     end
   end
 
-  # compute reference element volume
-  self.volume_ = ReferenceElementsImpl.referenceVolume(T, topologyId, dim)
-
   # compute integration outer normals
   if dim > 0
-    resize!(integrationNormals_, size(self, 1))
-    ReferenceElementsImpl.referenceIntegrationOuterNormals(topologyId, dim, integrationNormals_)
+    resize!(self.integrationNormals_, size(self, 1))
+    fill!(self.integrationNormals_, Vector{T}(undef,dim))
+    # self.integrationNormals_ = [Vector{T}(undef,dim) for _ = 1:size(self, 1)]
+    ReferenceElementsImpl.referenceIntegrationOuterNormals!(type.topologyId, dim, self.integrationNormals_)
   end
 
   # set up geometries
   for codim = 0:dim
-    ReferenceElementsImpl.createGeometries!(self, codim)
+    createGeometries!(self, codim)
   end
 end
 
