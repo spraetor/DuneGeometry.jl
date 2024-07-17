@@ -57,8 +57,8 @@ function subTopologyId(topologyId::UInt32, dim::Integer, codim::Integer, i::Inte
 end
 
 
-function subTopologyNumbering2!(topologyId::UInt32, dim::Integer, codim::Integer, i::Integer,
-                                subcodim::Integer)
+function subTopologyNumbering!(topologyId::UInt32, dim::Integer, codim::Integer, i::Integer,
+                               subcodim::Integer)
   @argcheck (codim >= 0) && (subcodim >= 0) && (codim + subcodim <= dim)
   @argcheck 0 < i <= size(topologyId, dim, codim)
 
@@ -83,11 +83,11 @@ function subTopologyNumbering2!(topologyId::UInt32, dim::Integer, codim::Integer
         shift = 0
         if codim + subcodim < dim
           shift += size(subId, dim-codim-1, subcodim)
-          out[1:shift] = subTopologyNumbering2!(baseId, dim-1, codim, i, subcodim)
+          out[1:shift] = subTopologyNumbering!(baseId, dim-1, codim, i, subcodim)
         end
 
         ms = size(subId, dim-codim-1, subcodim-1)
-        out[(shift+1):(shift+ms+1)] = subTopologyNumbering2!(baseId, dim-1, codim, i, subcodim-1, Base.view())
+        out[(shift+1):(shift+ms+1)] = subTopologyNumbering!(baseId, dim-1, codim, i, subcodim-1, Base.view())
         for j = 1:ms
           out[shift + j] += nb
           out[shift + j + ms] = out[shift + j] + mb
@@ -96,7 +96,7 @@ function subTopologyNumbering2!(topologyId::UInt32, dim::Integer, codim::Integer
         return out
       else
         s = (i <= n+m ? 0 : 1)
-        out = subTopologyNumbering2!(baseId, dim-1, codim-1, i-(n+s*m), subcodim)
+        out = subTopologyNumbering!(baseId, dim-1, codim-1, i-(n+s*m), subcodim)
         for j in eachIndex(out)
           out[j] += nb + s*mb
         end
@@ -106,15 +106,15 @@ function subTopologyNumbering2!(topologyId::UInt32, dim::Integer, codim::Integer
       @assert TypesImpl.isPyramid(topologyId, dim)
 
       if i <= m
-        return subTopologyNumbering2!(baseId, dim-1, codim-1, i, subcodim)
+        return subTopologyNumbering!(baseId, dim-1, codim-1, i, subcodim)
       else
         out = zeros(UInt, len)
         subId = subTopologyId(baseId, dim-1, codim, i-m)
         ms = size(subId, dim-codim-1, subcodim-1)
 
-        out[1:ms] = subTopologyNumbering2!(baseId, dim-1, codim, i-m, subcodim-1)
+        out[1:ms] = subTopologyNumbering!(baseId, dim-1, codim, i-m, subcodim-1)
         if codim+subcodim < dim
-          out[(ms+1):end] = subTopologyNumbering2!(baseId, dim-1, codim, i-m, subcodim)
+          out[(ms+1):end] = subTopologyNumbering!(baseId, dim-1, codim, i-m, subcodim)
           for j = (ms+1):length(out)
             out[j] += mb
           end
@@ -382,7 +382,7 @@ end
 
 
 function numbers(self::SubEntityInfo, cc::Integer)
-  return Base.view(self.numbering_, self.offset_[cc+1]:self.offset_[cc+2]), self.containsSubentity_[cc+1]
+  return Base.view(self.numbering_, (self.offset_[cc+1]+1):self.offset_[cc+2]), self.containsSubentity_[cc+1]
 end
 
 
@@ -399,7 +399,7 @@ function initialize!(self::SubEntityInfo, topologyId::UInt32, dim::Integer, codi
   resize!(self.numbering_, self.offset_[dim+2])
   fill!(self.numbering_, 0)
   for cc = codim:dim
-    self.numbering_[(self.offset_[cc+1]+1):self.offset_[cc+2]] = subTopologyNumbering2!(topologyId, dim, codim, i, cc-codim)
+    self.numbering_[(self.offset_[cc+1]+1):self.offset_[cc+2]] = subTopologyNumbering!(topologyId, dim, codim, i, cc-codim)
   end
 
   # initialize containsSubentity lookup-table

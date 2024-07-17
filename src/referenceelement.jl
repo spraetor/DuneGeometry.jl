@@ -142,7 +142,8 @@ respect to E. For `0<=cc<c` this will return an empty range.
 """
 function subEntities(self::ReferenceElement{T}, i::Integer, c::Integer, cc::Integer) where {T<:Real}
     @argcheck 0 < i <= size(self, c)
-    return ReferenceElementsImpl.numbers(self.info_[c+1][i], cc)
+    numbering, containsSubentity = ReferenceElementsImpl.numbers(self.info_[c+1][i], cc)
+    return numbering[Base.view(containsSubentity,1:length(numbering))]
 end
 
 
