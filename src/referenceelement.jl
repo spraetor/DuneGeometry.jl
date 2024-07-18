@@ -42,19 +42,19 @@ struct ReferenceElement{T<:Real}
     info_::Vector{Vector{ReferenceElementsImpl.SubEntityInfo}}
 
     # constructors
-    ReferenceElement{T}(topologyId::UInt32, dim::Integer) where {T<:Real} = new(Int(dim),
-            ReferenceElementsImpl.referenceVolume(T, topologyId, dim),
-            [Vector{Coordinate{T}}() for _ in 1:dim+1],
-            Vector{Coordinate{T}}(),
-            [Vector{ReferenceElementGeometry{T}}() for _ in 1:dim+1],
-            [Vector{ReferenceElementsImpl.SubEntityInfo}() for _ in 1:dim+1])
+    # ReferenceElement{T}(topologyId::UInt32, dim::Integer) where {T<:Real} = new(Int(dim),
+    #         ReferenceElementsImpl.referenceVolume(T, topologyId, dim),
+    #         [Vector{Coordinate{T}}() for _ in 1:dim+1],
+    #         Vector{Coordinate{T}}(),
+    #         [Vector{ReferenceElementGeometry{T}}() for _ in 1:dim+1],
+    #         [Vector{ReferenceElementsImpl.SubEntityInfo}() for _ in 1:dim+1])
 end
 
-function ReferenceElement{T}(type::GeometryType) where {T<:Real}
-    r = ReferenceElement{T}(type.topologyId, type.dim)
-    initialize!(r, type)
-    return r
-end
+# function ReferenceElement{T}(type::GeometryType) where {T<:Real}
+#     r = ReferenceElement{T}(type.topologyId, type.dim)
+#     initialize!(r, type)
+#     return r
+# end
 
 function ReferenceElementGeometry(refElem::ReferenceElement{T}, origin::AbstractVector{T},
                                   jacobianTransposed::AbstractArray{T,2}) where {T<:Real}
@@ -249,65 +249,77 @@ function integrationOuterNormal(self::ReferenceElement{T}, face::Integer)::Vecto
 end
 
 
+# constructor of ReferenceElement
+function ReferenceElement{T}(type::GeometryType) where {T<:Real}
+    dimension = type.dim
+    volume = ReferenceElementsImpl.referenceVolume(T, type.topologyId, dimension)
+
+    info = [ Vector{ReferenceElementsImpl.SubEntityInfo}() for _ in 1:dimension+1 ]
+    for codim = 0:dimension
+        s = ReferenceElementsImpl.size(type.topologyId, dimension, codim)
+        resize!(info[codim+1], s)
+        for i = 1:s
+            info[codim+1][i] = ReferenceElementsImpl.SubEntityInfo(type, codim, i)
+        end
+    end
+
+    baryCenters = Vector{Vector{Coordinate{T}}}(undef, dimension+1)
+
+    # compute corners
+    numVertices = length(info[dimension+1])
+    baryCenters[dimension+1] = [Vector{T}(undef,dimension) for _ = 1:numVertices]
+    ReferenceElementsImpl.referenceCorners!(type.topologyId, dimension, baryCenters[dimension+1])
+
+    # compute barycenters
+    for codim = 0:dimension
+        baryCenters[codim+1] = [Vector{T}(undef,dimension) for _ = 1:length(info[codim+1])]
+        for i = 1:length(info[codim+1])
+            baryCenters[codim+1][i] .= 0
+            numCorners = ReferenceElementsImpl.size(info[codim+1][i], dimension)
+            for j = 1:numCorners
+                k = ReferenceElementsImpl.number(info[codim+1][i], j, dimension)
+                baryCenters[codim+1][i] += baryCenters[dimension+1][k]
+            end
+            baryCenters[codim+1][i] *= T(1) / T( numCorners )
+        end
+    end
+
+    # compute integration outer normals
+    integrationNormals = Vector{Coordinate{T}}()
+    if dimension > 0
+      resize!(integrationNormals, length(info[2]))
+      fill!(integrationNormals, Vector{T}(undef,dimension))
+      ReferenceElementsImpl.referenceIntegrationOuterNormals!(type.topologyId, dimension, integrationNormals)
+    end
+
+    # set up geometries
+    geometries = [ Vector{ReferenceElementGeometry{T}}() for _ in 1:dimension+1 ]
+
+    r = ReferenceElement{T}(dimension, volume, baryCenters, integrationNormals, geometries, info)
+
+    for codim = 0:dimension
+      createGeometries!(r, codim)
+    end
+
+    return r
+end
+
+
 function subRefElement(self::ReferenceElement{T}, i::Integer, cc::Integer) where {T<:Real}
-  return cc == 0 ? self : ReferenceElement{T}(type(self,i,cc))
+    return cc == 0 ? self : ReferenceElement{T}(type(self,i,cc))
 end
 
 function createGeometries!(self::ReferenceElement{T}, codim::Integer) where {T<:Real}
-  dim = self.dimension
-  s = size(self, codim)
-  origins = [ Vector{T}(undef,dim) for _ = 1:s ]
-  jacobianTransposeds = [ Matrix{T}(undef, dim-codim, dim) for _ in 1:s ]
-  ReferenceElementsImpl.referenceEmbeddings!(type(self).topologyId, dim, codim, origins, jacobianTransposeds)
+    dim = self.dimension
+    s = size(self, codim)
+    origins = [ Vector{T}(undef,dim) for _ = 1:s ]
+    jacobianTransposeds = [ Matrix{T}(undef, dim-codim, dim) for _ in 1:s ]
+    ReferenceElementsImpl.referenceEmbeddings!(type(self).topologyId, dim, codim, origins, jacobianTransposeds)
 
-  resize!(self.geometries_[codim+1], s)
-  for i = 1:s
-    self.geometries_[codim+1][i] = ReferenceElementGeometry(subRefElement(self,i,codim), origins[i], jacobianTransposeds[i])
-  end
-end
-
-function initialize!(self::ReferenceElement{T}, type::GeometryType) where {T<:Real}
-  # set up subentities
-  dim = self.dimension
-  for codim = 0:dim
-    s = ReferenceElementsImpl.size(type.topologyId, dim, codim)
-    resize!(self.info_[codim+1], s)
-
+    resize!(self.geometries_[codim+1], s)
     for i = 1:s
-        self.info_[codim+1][i] = ReferenceElementsImpl.SubEntityInfo(type, codim, i)
+        self.geometries_[codim+1][i] = ReferenceElementGeometry(subRefElement(self,i,codim), origins[i], jacobianTransposeds[i])
     end
-  end
-
-  # compute corners
-  numVertices = size(self,dim)
-  self.baryCenters_[dim+1] = [Vector{T}(undef,dim) for _ = 1:numVertices]
-  ReferenceElementsImpl.referenceCorners!(type.topologyId, dim, self.baryCenters_[dim+1])
-
-  # compute barycenters
-  for codim = 0:dim
-    self.baryCenters_[codim+1] = [Vector{T}(undef,dim) for _ = 1:size(self, codim)]
-    for i = 1:size(self, codim)
-        self.baryCenters_[codim+1][i] = Base.zeros(T,(dim,))
-        numCorners = size(self, i, codim, dim)
-        for j = 1:numCorners
-            self.baryCenters_[codim+1][i] += self.baryCenters_[dim+1][subEntity(self, i, codim, j, dim)]
-            self.baryCenters_[codim+1][i] *= T(1) / T( numCorners )
-        end
-    end
-  end
-
-  # compute integration outer normals
-  if dim > 0
-    resize!(self.integrationNormals_, size(self, 1))
-    fill!(self.integrationNormals_, Vector{T}(undef,dim))
-    # self.integrationNormals_ = [Vector{T}(undef,dim) for _ = 1:size(self, 1)]
-    ReferenceElementsImpl.referenceIntegrationOuterNormals!(type.topologyId, dim, self.integrationNormals_)
-  end
-
-  # set up geometries
-  for codim = 0:dim
-    createGeometries!(self, codim)
-  end
 end
 
 end # module ReferenceElements
