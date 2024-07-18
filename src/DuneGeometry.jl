@@ -1,4 +1,4 @@
-module QuadRules
+module DuneGeometry
 
 # import ...
 
@@ -10,4 +10,4 @@ include("referenceelement.impl.jl")
 include("referenceelement.jl")
 using .ReferenceElements
 
-end # module QuadRules
+end # module DuneGeometry

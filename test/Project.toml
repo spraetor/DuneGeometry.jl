@@ -1,3 +1,2 @@
 [deps]
-SimplicialCubature = "552d7cc9-94b7-4d62-a95c-872e87830e46"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

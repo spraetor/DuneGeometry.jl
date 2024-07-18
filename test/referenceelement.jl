@@ -1,7 +1,7 @@
-using QuadRules: GeometryType, BasicType, ReferenceElement
+using DuneGeometry: GeometryType, BasicType, ReferenceElement
 using Test
 
-import QuadRules.ReferenceElements
+import DuneGeometry.ReferenceElements
 
 println("Testing ReferenceElement")
 

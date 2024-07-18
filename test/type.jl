@@ -1,4 +1,4 @@
-using QuadRules: GeometryType, BasicType, basicType
+using DuneGeometry: GeometryType, BasicType, basicType
 using Test
 
 println("Testing BasicType")
@@ -43,34 +43,34 @@ pyramid = GeometryType(BasicType.pyramid,3)
 @test basicType(pyramid) == BasicType.pyramid
 
 # check isXY properties
-@test QuadRules.isVertex(vertex)
-@test QuadRules.isLine(line)
-@test QuadRules.isTriangle(tri)
-@test QuadRules.isQuadrilateral(quad)
-@test QuadRules.isTetrahedron(tet)
-@test QuadRules.isHexahedron(hex)
-@test QuadRules.isPrism(prism)
-@test QuadRules.isPyramid(pyramid)
+@test DuneGeometry.isVertex(vertex)
+@test DuneGeometry.isLine(line)
+@test DuneGeometry.isTriangle(tri)
+@test DuneGeometry.isQuadrilateral(quad)
+@test DuneGeometry.isTetrahedron(tet)
+@test DuneGeometry.isHexahedron(hex)
+@test DuneGeometry.isPrism(prism)
+@test DuneGeometry.isPyramid(pyramid)
 
-@test QuadRules.isSimplex(vertex)
-@test QuadRules.isSimplex(line)
-@test QuadRules.isSimplex(tri)
-@test QuadRules.isSimplex(tet)
+@test DuneGeometry.isSimplex(vertex)
+@test DuneGeometry.isSimplex(line)
+@test DuneGeometry.isSimplex(tri)
+@test DuneGeometry.isSimplex(tet)
 
-@test QuadRules.isCube(vertex)
-@test QuadRules.isCube(line)
-@test QuadRules.isCube(quad)
-@test QuadRules.isCube(hex)
+@test DuneGeometry.isCube(vertex)
+@test DuneGeometry.isCube(line)
+@test DuneGeometry.isCube(quad)
+@test DuneGeometry.isCube(hex)
 
-@test QuadRules.isPrismatic(line)
-@test QuadRules.isPrismatic(quad)
-@test QuadRules.isPrismatic(hex)
-@test QuadRules.isPrismatic(prism)
+@test DuneGeometry.isPrismatic(line)
+@test DuneGeometry.isPrismatic(quad)
+@test DuneGeometry.isPrismatic(hex)
+@test DuneGeometry.isPrismatic(prism)
 
-@test QuadRules.isConical(line)
-@test QuadRules.isConical(tri)
-@test QuadRules.isConical(tet)
-@test QuadRules.isConical(pyramid)
+@test DuneGeometry.isConical(line)
+@test DuneGeometry.isConical(tri)
+@test DuneGeometry.isConical(tet)
+@test DuneGeometry.isConical(pyramid)
 
 # check string conversion
 @test string(vertex) == "vertex"
@@ -89,7 +89,7 @@ pyramid = GeometryType(BasicType.pyramid,3)
 
 none = GeometryType()
 for gt in [vertex,line,tri,quad,tet,hex,prism,pyramid]
-  @test gt == GeometryType(QuadRules.toId(gt)) # bug for gt == none
+  @test gt == GeometryType(DuneGeometry.toId(gt)) # bug for gt == none
   if !gt.none
     @test gt == GeometryType(gt.topologyId, gt.dim)
   end

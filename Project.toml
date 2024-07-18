@@ -1,4 +1,4 @@
-name = "QuadRules"
+name = "DuneGeometry"
 uuid = "810c9ea8-d2f7-4325-8ec0-dc8b26474921"
 authors = ["Simon Praetorius <simon.praetorius@tu-dresden.de>"]
 version = "0.1.0"

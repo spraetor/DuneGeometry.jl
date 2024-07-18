@@ -1,8 +1,8 @@
-using QuadRules: GeometryType, BasicType
+using DuneGeometry: GeometryType, BasicType
 using Test
 
 println("Testing ReferenceElementsImpl")
-import QuadRules.ReferenceElementsImpl
+import DuneGeometry.ReferenceElementsImpl
 
 # 1. check size and subTopologyId
 
