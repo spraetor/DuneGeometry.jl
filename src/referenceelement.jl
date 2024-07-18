@@ -40,21 +40,8 @@ struct ReferenceElement{T<:Real}
     integrationNormals_::Vector{Coordinate{T}}
     geometries_::Vector{Vector{ReferenceElementGeometry{T}}}
     info_::Vector{Vector{ReferenceElementsImpl.SubEntityInfo}}
-
-    # constructors
-    # ReferenceElement{T}(topologyId::UInt32, dim::Integer) where {T<:Real} = new(Int(dim),
-    #         ReferenceElementsImpl.referenceVolume(T, topologyId, dim),
-    #         [Vector{Coordinate{T}}() for _ in 1:dim+1],
-    #         Vector{Coordinate{T}}(),
-    #         [Vector{ReferenceElementGeometry{T}}() for _ in 1:dim+1],
-    #         [Vector{ReferenceElementsImpl.SubEntityInfo}() for _ in 1:dim+1])
 end
 
-# function ReferenceElement{T}(type::GeometryType) where {T<:Real}
-#     r = ReferenceElement{T}(type.topologyId, type.dim)
-#     initialize!(r, type)
-#     return r
-# end
 
 function ReferenceElementGeometry(refElem::ReferenceElement{T}, origin::AbstractVector{T},
                                   jacobianTransposed::AbstractArray{T,2}) where {T<:Real}
