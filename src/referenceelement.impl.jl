@@ -87,7 +87,7 @@ function subTopologyNumbering!(topologyId::UInt32, dim::Integer, codim::Integer,
         end
 
         ms = size(subId, dim-codim-1, subcodim-1)
-        out[(shift+1):(shift+ms+1)] = subTopologyNumbering!(baseId, dim-1, codim, i, subcodim-1, Base.view())
+        out[(shift+1):(shift+ms+1)] = subTopologyNumbering!(baseId, dim-1, codim, i, subcodim-1)
         for j = 1:ms
           out[shift + j] += nb
           out[shift + j + ms] = out[shift + j] + mb
@@ -401,12 +401,13 @@ function initialize!(self::SubEntityInfo, topologyId::UInt32, dim::Integer, codi
   for cc = codim:dim
     self.numbering_[(self.offset_[cc+1]+1):self.offset_[cc+2]] = subTopologyNumbering!(topologyId, dim, codim, i, cc-codim)
   end
+  println(self.numbering_)
 
   # initialize containsSubentity lookup-table
   for cc = 0:dim
     self.containsSubentity_[cc+1] = Base.falses(self.maxSubEntityCount_)
-    for i = 1:size(self,cc)
-      self.containsSubentity_[cc+1][number(self,i,cc)] = true
+    for ii = 1:size(self,cc)
+      self.containsSubentity_[cc+1][number(self,ii,cc)] = true
     end
   end
   return nothing

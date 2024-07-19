@@ -8,6 +8,7 @@ using ArgCheck
 # Import other sub-modules
 using ..Geometries
 using ..ReferenceElements
+using ..Types
 
 
 struct AffineGeometry{T<:Real} <: Geometry{T}
@@ -34,11 +35,11 @@ function AffineGeometry(refElement::ReferenceElement{T}, origin::AbstractVector{
   return AffineGeometry(refElement.dimension, length(origin), refElement, origin, jt, jit, integrationElement)
 end
 
-# "Create affine geometry from GeometryType, one vertex, and the Jacobian matrix."
-# function AffineGeometry(gt::GeometryType, origin::AbstractVector{T},
-#                         jt::AbstractArray{T,2}) where {T<:Real}
-#   return AffineGeometry(ReferenceElement{T}(gt), origin, jt)
-# end
+"Create affine geometry from GeometryType, one vertex, and the Jacobian matrix."
+function AffineGeometry(gt::GeometryType, origin::AbstractVector{T},
+                        jt::AbstractArray{T,2}) where {T<:Real}
+  return AffineGeometry(ReferenceElement{T}(gt), origin, jt)
+end
 
 "Create affine geometry from reference element and a vector of vertex coordinates."
 function AffineGeometry(refElement::ReferenceElement{T}, coordVector::AbstractVector{C}) where {T<:Real, S<:Real, C<:AbstractVector{S}}
@@ -47,10 +48,10 @@ function AffineGeometry(refElement::ReferenceElement{T}, coordVector::AbstractVe
   return AffineGeometry(refElement, origin, jt)
 end
 
-# "Create affine geometry from GeometryType and a vector of vertex coordinates."
-# function AffineGeometry(gt::GeometryType, coordVector::AbstractVector{C}) where {T<:Real, C<:AbstractVector{T}}
-#   return AffineGeometry(ReferenceElement{T}(gt), coordVector)
-# end
+"Create affine geometry from GeometryType and a vector of vertex coordinates."
+function AffineGeometry(gt::GeometryType, coordVector::AbstractVector{C}) where {T<:Real, C<:AbstractVector{T}}
+  return AffineGeometry(ReferenceElement{T}(gt), coordVector)
+end
 
 
 "Always true: this is an affine geometry."

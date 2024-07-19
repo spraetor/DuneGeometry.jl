@@ -41,7 +41,7 @@ struct ReferenceElement{T<:Real}
 
     # geometry information
     origins_::Vector{Vector{Coordinate{T}}}
-    jacobianTranspseds_::Vector{Vector{Array{T,2}}}
+    jacobianTransposeds_::Vector{Vector{Array{T,2}}}
 end
 
 
@@ -126,8 +126,7 @@ respect to E. For `0<=cc<c` this will return an empty range.
 """
 function subEntities(self::ReferenceElement{T}, i::Integer, c::Integer, cc::Integer) where {T<:Real}
     @argcheck 0 < i <= size(self, c)
-    numbering, containsSubentity = ReferenceElementsImpl.numbers(self.info_[c+1][i], cc)
-    return numbering[Base.view(containsSubentity,1:length(numbering))]
+    return ReferenceElementsImpl.numbers(self.info_[c+1][i], cc)
 end
 
 
@@ -255,18 +254,21 @@ function ReferenceElement{T}(type::GeometryType) where {T<:Real}
     ReferenceElementsImpl.referenceCorners!(type.topologyId, dimension, baryCenters[dimension+1])
 
     # compute barycenters
-    for codim = 0:dimension
+    for codim = 0:dimension-1
         baryCenters[codim+1] = [Vector{T}(undef,dimension) for _ = 1:length(info[codim+1])]
         for i = 1:length(info[codim+1])
             baryCenters[codim+1][i] .= 0
             numCorners = ReferenceElementsImpl.size(info[codim+1][i], dimension)
+            println("numCorners=$(numCorners)")
             for j = 1:numCorners
                 k = ReferenceElementsImpl.number(info[codim+1][i], j, dimension)
+                println("  corner[$(k)] = ",baryCenters[dimension+1][k])
                 baryCenters[codim+1][i] += baryCenters[dimension+1][k]
             end
             baryCenters[codim+1][i] *= T(1) / T( numCorners )
         end
     end
+    println(baryCenters)
 
     # compute integration outer normals
     integrationNormals = Vector{Coordinate{T}}()
@@ -276,7 +278,10 @@ function ReferenceElement{T}(type::GeometryType) where {T<:Real}
       ReferenceElementsImpl.referenceIntegrationOuterNormals!(type.topologyId, dimension, integrationNormals)
     end
 
-    return ReferenceElement{T}(dimension, volume, baryCenters, integrationNormals, info)
+    origins = Vector{Vector{Coordinate{T}}}(undef, dimension+1)
+    jacobianTransposeds = Vector{Vector{Array{T,2}}}(undef, dimension+1)
+
+    return ReferenceElement{T}(dimension, volume, baryCenters, integrationNormals, info, origins, jacobianTransposeds)
 end
 
 

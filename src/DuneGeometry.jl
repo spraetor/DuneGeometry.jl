@@ -1,19 +1,19 @@
 module DuneGeometry
 
-export ReferenceElement,GeometryType,BasicType
+using Reexport
 
 include("type.impl.jl")
 include("type.jl")
-using .Types
+@reexport using .Types
 
 include("geometry.jl")
-using .Geometries
+@reexport using .Geometries
 
 include("referenceelement.impl.jl")
 include("referenceelement.jl")
-using .ReferenceElements
+@reexport using .ReferenceElements
 
 include("affinegeometry.jl")
-using .AffineGeometries
+@reexport using .AffineGeometries
 
 end # module DuneGeometry
