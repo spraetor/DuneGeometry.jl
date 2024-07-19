@@ -1,4 +1,4 @@
-using DuneGeometry: GeometryType, BasicType, basicType
+using DuneGeometry
 using Test
 
 println("Testing BasicType")

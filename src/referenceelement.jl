@@ -6,6 +6,9 @@ export ReferenceElement
 export size,subEntity,subEntities,type,position,checkInside,geometry,integrationOuterNormal
 
 using ArgCheck
+
+# Import other sub-modules
+using ..Geometries
 using ..Types
 
 # Import some implementation details
@@ -15,10 +18,6 @@ import ..TypesImpl
 # Some type aliases
 Coordinate{T<:Real} = Vector{T}
 
-# Placeholder for a geometry type
-struct ReferenceElementGeometry{T<:Real}
-    ReferenceElementGeometry{T}() where {T<:Real} = new()
-end
 
 """
     ReferenceElement{T}
@@ -38,15 +37,13 @@ struct ReferenceElement{T<:Real}
     volume_::T
     baryCenters_::Vector{Vector{Coordinate{T}}}
     integrationNormals_::Vector{Coordinate{T}}
-    geometries_::Vector{Vector{ReferenceElementGeometry{T}}}
     info_::Vector{Vector{ReferenceElementsImpl.SubEntityInfo}}
+
+    # geometry information
+    origins_::Vector{Vector{Coordinate{T}}}
+    jacobianTranspseds_::Vector{Vector{Array{T,2}}}
 end
 
-
-function ReferenceElementGeometry(refElem::ReferenceElement{T}, origin::AbstractVector{T},
-                                  jacobianTransposed::AbstractArray{T,2}) where {T<:Real}
-    return ReferenceElementGeometry{T}()
-end
 
 """
     size(r, c)
@@ -174,7 +171,7 @@ the center of gravity of E within the current reference element.
 - `c::Int`: Codimension of subentity E
 """
 function position(self::ReferenceElement{T}, i::Integer, c::Integer)::Vector{T} where {T<:Real}
-    @argcheck 0 <= c <= dim
+    @argcheck 0 <= c <= self.dimension
     return self.baryCenters_[c+1][i]
 end
 
@@ -191,25 +188,25 @@ reference element.
 - `x::DenseVector`: Coordinates of the point.
 """
 function checkInside(self::ReferenceElement{T}, x::DenseVector{T})::Bool where {T<:Real}
-    return ReferenceElementsImpl.checkInside(type(self).topologyId, dimension, x, 64 * eps(T))
+    return ReferenceElementsImpl.checkInside(type(self).topologyId, self.dimension, x, 64 * eps(T))
 end
 
 
 """
-    geometry(r, i)
+    geometry{G}(r, i)
 
 Obtain the embedding of subentity `(i,codim)` into the reference element
 
 Denote by E the i-th subentity of codimension codim of the current
-reference element. This method returns a \ref Dune::AffineGeometry
+reference element. This method returns a geometry of type `G`
 that maps the reference element of E into the current reference element.
 
 # Arguments
 - `i::Int`: number of subentity E (0 < i <= size( c ))
 - `c::Int`: Codimension of subentity E
 """
-function geometry(self::ReferenceElement{T}, i::Integer, c::Integer)::ReferenceElementGeometry{T} where {T<:Real}
-    return self.geometries_[c+1][i]
+function geometry(::Type{G}, self::ReferenceElement{T}, i::Integer, c::Integer)::G where {T<:Real,G<:Geometry{T}}
+    return G(subRefElement(self,i,c), self.origins_[c+1][i], self.jacobianTransposeds_[c+1][i])
 end
 
 
@@ -279,16 +276,7 @@ function ReferenceElement{T}(type::GeometryType) where {T<:Real}
       ReferenceElementsImpl.referenceIntegrationOuterNormals!(type.topologyId, dimension, integrationNormals)
     end
 
-    # set up geometries
-    geometries = [ Vector{ReferenceElementGeometry{T}}() for _ in 1:dimension+1 ]
-
-    r = ReferenceElement{T}(dimension, volume, baryCenters, integrationNormals, geometries, info)
-
-    for codim = 0:dimension
-      createGeometries!(r, codim)
-    end
-
-    return r
+    return ReferenceElement{T}(dimension, volume, baryCenters, integrationNormals, info)
 end
 
 
@@ -299,14 +287,9 @@ end
 function createGeometries!(self::ReferenceElement{T}, codim::Integer) where {T<:Real}
     dim = self.dimension
     s = size(self, codim)
-    origins = [ Vector{T}(undef,dim) for _ = 1:s ]
-    jacobianTransposeds = [ Matrix{T}(undef, dim-codim, dim) for _ in 1:s ]
-    ReferenceElementsImpl.referenceEmbeddings!(type(self).topologyId, dim, codim, origins, jacobianTransposeds)
-
-    resize!(self.geometries_[codim+1], s)
-    for i = 1:s
-        self.geometries_[codim+1][i] = ReferenceElementGeometry(subRefElement(self,i,codim), origins[i], jacobianTransposeds[i])
-    end
+    self.origins_[codim+1] = [ Vector{T}(undef,dim) for _ = 1:s ]
+    self.jacobianTransposeds_[codim+1] = [ Matrix{T}(undef, dim-codim, dim) for _ in 1:s ]
+    ReferenceElementsImpl.referenceEmbeddings!(type(self).topologyId, dim, codim, self.origins_[codim+1], self.jacobianTransposeds_[codim+1])
 end
 
 end # module ReferenceElements
