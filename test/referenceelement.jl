@@ -1,5 +1,5 @@
 using DuneGeometry: GeometryType, BasicType, ReferenceElement
-using DuneGeometry.ReferenceElements: size, position
+using DuneGeometry.ReferenceElements: size, position, type
 using Test
 
 # import DuneGeometry.ReferenceElements
@@ -57,7 +57,6 @@ end
 
 
 # test geometry types
-
 @test type(ref,1,0) == type(ref)
 @test type(ref,1,0) == tri
 for i = 1:size(ref,1)
@@ -70,6 +69,7 @@ end
 
 # test positions
 @test position(ref,1,0) == Float64[1.0/3.0, 1.0/3.0]
+# NOTE: Something with SubEntityInfo.numbering is still wrong.
 # @test position(ref,1,1) == Float64[0.5,0.0]
 # @test position(ref,2,1) == Float64[0.0,0.5]
 # @test position(ref,3,1) == Float64[0.5,0.5]
@@ -77,4 +77,27 @@ end
 @test position(ref,2,2) == Float64[1.0,0.0]
 @test position(ref,3,2) == Float64[0.0,1.0]
 
-# NOTE: Something with SubEntityInfo.numbering is still wrong.
+
+# test checkInside
+@test checkInside(ref, position(ref,1,0))
+@test checkInside(ref, Float64[0.1, 0.1])
+@test checkInside(ref, Float64[0.0, 0.0])
+@test checkInside(ref, Float64[1.0, 0.0])
+@test checkInside(ref, Float64[0.0, 1.0])
+@test !checkInside(ref, Float64[-1.0, -1.0])
+
+
+# test geometry
+using DuneGeometry.AffineGeometries: AffineGeometry,affine
+geo = geometry(AffineGeometry{Float64}, ref, 1, 0)
+@test affine(geo)
+
+
+# test volume
+@test volume(ref) == Float64(0.5)
+
+
+# test integrationOuterNormal
+# TODO: does not yet work
+# @test integrationOuterNormal(ref,1) == Float64[1.0, 1.0]
+# @test integrationOuterNormal(ref,2) == Float64[1.0, 1.0]

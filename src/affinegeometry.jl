@@ -1,6 +1,7 @@
 module AffineGeometries
 
 export AffineGeometry
+export affine,type,corners
 
 using LinearAlgebra: pinv, det
 using ArgCheck
@@ -25,32 +26,32 @@ struct AffineGeometry{T<:Real} <: Geometry{T}
 end
 
 "Create affine geometry from reference element, one vertex, and the Jacobian matrix."
-function AffineGeometry(refElement::ReferenceElement{T}, origin::AbstractVector{T},
-                        jt::AbstractArray{T,2}) where {T<:Real}
-  @argcheck size(jt,1) == length(origin)
-  @argcheck size(jt,2) == refElement.dimension
+function AffineGeometry{T}(refElement::ReferenceElement{T}, origin::AbstractVector{T},
+                           jt::AbstractArray{T,2}) where {T<:Real}
+  @argcheck Base.size(jt,1) == length(origin)
+  @argcheck Base.size(jt,2) == refElement.dimension
 
-  jit = LinearAlgebra.pinv(jt)
-  integrationElement = abs(LinearAlgebra.det(jt))
-  return AffineGeometry(refElement.dimension, length(origin), refElement, origin, jt, jit, integrationElement)
+  jit = pinv(jt)
+  integrationElement = abs(det(jt))
+  return AffineGeometry{T}(refElement.dimension, length(origin), refElement, origin, jt, jit, integrationElement)
 end
 
 "Create affine geometry from GeometryType, one vertex, and the Jacobian matrix."
-function AffineGeometry(gt::GeometryType, origin::AbstractVector{T},
-                        jt::AbstractArray{T,2}) where {T<:Real}
-  return AffineGeometry(ReferenceElement{T}(gt), origin, jt)
+function AffineGeometry{T}(gt::GeometryType, origin::AbstractVector{T},
+                           jt::AbstractArray{T,2}) where {T<:Real}
+  return AffineGeometry{T}(ReferenceElement{T}(gt), origin, jt)
 end
 
 "Create affine geometry from reference element and a vector of vertex coordinates."
-function AffineGeometry(refElement::ReferenceElement{T}, coordVector::AbstractVector{C}) where {T<:Real, S<:Real, C<:AbstractVector{S}}
+function AffineGeometry{T}(refElement::ReferenceElement{T}, coordVector::AbstractVector{C}) where {T<:Real, S<:Real, C<:AbstractVector{S}}
   origin = coordVector[1]
-  jt = T[ coordVector[i+1] - origin for i = 1:refElement.dimension ]
-  return AffineGeometry(refElement, origin, jt)
+  jt = mapreduce(permutedims,vcat,[ coordVector[i+1] - origin for i = 1:refElement.dimension ])
+  return AffineGeometry{T}(refElement, origin, jt)
 end
 
 "Create affine geometry from GeometryType and a vector of vertex coordinates."
-function AffineGeometry(gt::GeometryType, coordVector::AbstractVector{C}) where {T<:Real, C<:AbstractVector{T}}
-  return AffineGeometry(ReferenceElement{T}(gt), coordVector)
+function AffineGeometry{T}(gt::GeometryType, coordVector::AbstractVector{C}) where {T<:Real, C<:AbstractVector{T}}
+  return AffineGeometry{T}(ReferenceElement{T}(gt), coordVector)
 end
 
 
@@ -61,12 +62,12 @@ end
 
 "Obtain the type of the reference element."
 function type(g::AffineGeometry{T})::GeometryType where {T<:Real}
-  type(g.refElement_)
+  ReferenceElements.type(g.refElement_)
 end
 
 "Obtain number of corners of the corresponding reference element."
 function corners(g::AffineGeometry{T}) where {T<:Real}
-  size(g.refElement_, g.mydimension)
+  ReferenceElements.size(g.refElement_, g.mydimension)
 end
 
 "Obtain coordinates of the i-th corner."

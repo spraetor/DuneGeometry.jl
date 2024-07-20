@@ -401,7 +401,6 @@ function initialize!(self::SubEntityInfo, topologyId::UInt32, dim::Integer, codi
   for cc = codim:dim
     self.numbering_[(self.offset_[cc+1]+1):self.offset_[cc+2]] = subTopologyNumbering!(topologyId, dim, codim, i, cc-codim)
   end
-  println(self.numbering_)
 
   # initialize containsSubentity lookup-table
   for cc = 0:dim

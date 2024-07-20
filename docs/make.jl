@@ -7,7 +7,6 @@ makedocs(
     format = Documenter.HTML(prettyurls = get(ENV, "CI", nothing) == "true"),
     pages = [
         "Index" => "index.md",
-        "About" => "about.md",
     ],
     modules = [DuneGeometry],
     doctest = false,

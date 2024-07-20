@@ -3,7 +3,7 @@ module ReferenceElements
 # types
 export ReferenceElement
 # methods
-export size,subEntity,subEntities,type,position,checkInside,geometry,integrationOuterNormal
+export size,subEntity,subEntities,type,position,checkInside,geometry,volume,integrationOuterNormal
 
 using ArgCheck
 
@@ -259,16 +259,13 @@ function ReferenceElement{T}(type::GeometryType) where {T<:Real}
         for i = 1:length(info[codim+1])
             baryCenters[codim+1][i] .= 0
             numCorners = ReferenceElementsImpl.size(info[codim+1][i], dimension)
-            println("numCorners=$(numCorners)")
             for j = 1:numCorners
                 k = ReferenceElementsImpl.number(info[codim+1][i], j, dimension)
-                println("  corner[$(k)] = ",baryCenters[dimension+1][k])
                 baryCenters[codim+1][i] += baryCenters[dimension+1][k]
             end
             baryCenters[codim+1][i] *= T(1) / T( numCorners )
         end
     end
-    println(baryCenters)
 
     # compute integration outer normals
     integrationNormals = Vector{Coordinate{T}}()
@@ -281,7 +278,13 @@ function ReferenceElement{T}(type::GeometryType) where {T<:Real}
     origins = Vector{Vector{Coordinate{T}}}(undef, dimension+1)
     jacobianTransposeds = Vector{Vector{Array{T,2}}}(undef, dimension+1)
 
-    return ReferenceElement{T}(dimension, volume, baryCenters, integrationNormals, info, origins, jacobianTransposeds)
+    ref = ReferenceElement{T}(dimension, volume, baryCenters, integrationNormals, info, origins, jacobianTransposeds)
+
+    for codim = 0:dimension
+        createGeometries!(ref,codim)
+    end
+
+    return ref
 end
 
 
