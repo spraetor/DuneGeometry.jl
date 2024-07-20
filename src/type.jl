@@ -8,7 +8,7 @@ export basicType,toId,isVertex,isLine,isTriangle,isQuadrilateral,isTetrahedron,i
 
 using EnumX
 
-"Each entity can be tagged by one of these basic types plus its space dimension."
+# "Each entity can be tagged by one of these basic types plus its space dimension."
 @enumx BasicType begin
     simplex = 1     # Simplicial element in any nonnegative dimension
     cube = 2        # Cube element in any nonnegative dimension

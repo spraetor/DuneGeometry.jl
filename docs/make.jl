@@ -1,16 +1,19 @@
-using QuadRules
 using Documenter
+using DuneGeometry
 
-makedocs(;
-  modules=[QuadRules],
-  author="Simon Praetorius",
-  repo="https://github.com/spraetor/quadrules",
-  format=Documenter.HTML(;
-    canonical="https://spraetor.github.io/quadrules",
-    assets=String[],
-  ),
-  pages=[
-    "Home" => "index.md",
-    "Library" => "Library.md",
-  ],
+push!(LOAD_PATH,"../src/")
+makedocs(
+    sitename = "DuneGeometry.jl Documentation",
+    format = Documenter.HTML(prettyurls = get(ENV, "CI", nothing) == "true"),
+    pages = [
+        "Index" => "index.md",
+        "About" => "about.md",
+    ],
+    modules = [DuneGeometry],
+    doctest = false,
+)
+
+deploydocs(
+    repo = "github.com/spraetor/DuneGeometry.jl.git",
+    devbranch = "main"
 )
