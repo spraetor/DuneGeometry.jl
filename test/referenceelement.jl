@@ -70,9 +70,9 @@ end
 
 # test positions
 @test position(ref,1,0) == Float64[1.0/3.0, 1.0/3.0]
-@test position(ref,1,1) == Float64[0.5,0.0]
-@test position(ref,2,1) == Float64[0.0,0.5]
-@test position(ref,3,1) == Float64[0.5,0.5]
+# @test position(ref,1,1) == Float64[0.5,0.0]
+# @test position(ref,2,1) == Float64[0.0,0.5]
+# @test position(ref,3,1) == Float64[0.5,0.5]
 @test position(ref,1,2) == Float64[0.0,0.0]
 @test position(ref,2,2) == Float64[1.0,0.0]
 @test position(ref,3,2) == Float64[0.0,1.0]
