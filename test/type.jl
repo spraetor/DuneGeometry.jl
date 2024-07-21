@@ -43,34 +43,34 @@ pyramid = GeometryType(BasicType.pyramid,3)
 @test basicType(pyramid) == BasicType.pyramid
 
 # check isXY properties
-@test DuneGeometry.isVertex(vertex)
-@test DuneGeometry.isLine(line)
-@test DuneGeometry.isTriangle(tri)
-@test DuneGeometry.isQuadrilateral(quad)
-@test DuneGeometry.isTetrahedron(tet)
-@test DuneGeometry.isHexahedron(hex)
-@test DuneGeometry.isPrism(prism)
-@test DuneGeometry.isPyramid(pyramid)
+@test isVertex(vertex)
+@test isLine(line)
+@test isTriangle(tri)
+@test isQuadrilateral(quad)
+@test isTetrahedron(tet)
+@test isHexahedron(hex)
+@test isPrism(prism)
+@test isPyramid(pyramid)
 
-@test DuneGeometry.isSimplex(vertex)
-@test DuneGeometry.isSimplex(line)
-@test DuneGeometry.isSimplex(tri)
-@test DuneGeometry.isSimplex(tet)
+@test isSimplex(vertex)
+@test isSimplex(line)
+@test isSimplex(tri)
+@test isSimplex(tet)
 
-@test DuneGeometry.isCube(vertex)
-@test DuneGeometry.isCube(line)
-@test DuneGeometry.isCube(quad)
-@test DuneGeometry.isCube(hex)
+@test isCube(vertex)
+@test isCube(line)
+@test isCube(quad)
+@test isCube(hex)
 
-@test DuneGeometry.isPrismatic(line)
-@test DuneGeometry.isPrismatic(quad)
-@test DuneGeometry.isPrismatic(hex)
-@test DuneGeometry.isPrismatic(prism)
+@test isPrismatic(line)
+@test isPrismatic(quad)
+@test isPrismatic(hex)
+@test isPrismatic(prism)
 
-@test DuneGeometry.isConical(line)
-@test DuneGeometry.isConical(tri)
-@test DuneGeometry.isConical(tet)
-@test DuneGeometry.isConical(pyramid)
+@test isConical(line)
+@test isConical(tri)
+@test isConical(tet)
+@test isConical(pyramid)
 
 # check string conversion
 @test string(vertex) == "vertex"
@@ -89,7 +89,7 @@ pyramid = GeometryType(BasicType.pyramid,3)
 
 none = GeometryType()
 for gt in [vertex,line,tri,quad,tet,hex,prism,pyramid]
-  @test gt == GeometryType(DuneGeometry.toId(gt)) # bug for gt == none
+  @test gt == GeometryType(toId(gt)) # bug for gt == none
   if !gt.none
     @test gt == GeometryType(gt.topologyId, gt.dim)
   end

@@ -1,8 +1,5 @@
-module Types
-
 # types
 export BasicType,GeometryType
-
 # methods
 export basicType,toId,isVertex,isLine,isTriangle,isQuadrilateral,isTetrahedron,isHexahedron,isPyramid,isPrism,isSimplex,isCube,isConical,isPrismatic
 
@@ -164,5 +161,3 @@ function Base.show(io::IO, g::GeometryType)
         show(io, "(other [" * bitstring(g.topologyId) * "], " * string(g.dim) * ")")
     end
 end
-
-end # module Types

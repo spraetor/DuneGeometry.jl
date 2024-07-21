@@ -1,6 +1,5 @@
-using DuneGeometry: GeometryType, BasicType, ReferenceElement
-using DuneGeometry.ReferenceElements: size, position, type, volume
-using DuneGeometry.AffineGeometries: AffineGeometry,affine,integrationElement
+using DuneGeometry: GeometryType, BasicType, ReferenceElement, AffineGeometry
+using DuneGeometry: size, position, type, volume, affine, integrationElement
 using Test
 
 function testTriangleReferenceElement(ref::ReferenceElement{T}, tri::GeometryType) where {T<:Real}
@@ -110,8 +109,6 @@ function testTriangleReferenceElement(ref::ReferenceElement{T}, tri::GeometryTyp
 end
 
 
-
-# import DuneGeometry.ReferenceElements
 let tri = GeometryType(BasicType.simplex,2)
   for T in (Float32,Float64,BigFloat)
     println("Testing ReferenceElement{$(T)}")

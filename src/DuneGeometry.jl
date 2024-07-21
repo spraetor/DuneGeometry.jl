@@ -2,18 +2,16 @@ module DuneGeometry
 
 using Reexport
 
+abstract type AbstractGeometry{T<:Real} end
+
 include("type.impl.jl")
 include("type.jl")
-@reexport using .Types
-
-include("geometry.jl")
-@reexport using .Geometries
 
 include("referenceelement.impl.jl")
 include("referenceelement.jl")
-@reexport using .ReferenceElements
 
+# geometries
 include("affinegeometry.jl")
-@reexport using .AffineGeometries
+include("geometry.jl")
 
 end # module DuneGeometry

@@ -1,6 +1,6 @@
 module ReferenceElementsImpl
 
-using ..Types: GeometryType
+using DuneGeometry: GeometryType
 import ..TypesImpl
 
 using ArgCheck

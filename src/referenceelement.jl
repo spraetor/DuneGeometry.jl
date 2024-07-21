@@ -1,15 +1,9 @@
-module ReferenceElements
-
 # types
 export ReferenceElement
 # methods
 export size,subEntity,subEntities,type,position,checkInside,geometry,volume,integrationOuterNormal
 
 using ArgCheck
-
-# Import other sub-modules
-using ..Geometries
-using ..Types
 
 # Import some implementation details
 import ..ReferenceElementsImpl
@@ -204,7 +198,7 @@ that maps the reference element of E into the current reference element.
 - `i::Int`: number of subentity E (0 < i <= size( c ))
 - `c::Int`: Codimension of subentity E
 """
-function geometry(::Type{G}, self::ReferenceElement{T}, i::Integer, c::Integer)::G where {T<:Real,G<:Geometry{T}}
+function geometry(::Type{G}, self::ReferenceElement{T}, i::Integer, c::Integer)::G where {T<:Real,G<:AbstractGeometry{T}}
     return G(subRefElement(self,i,c), self.origins_[c+1][i], self.jacobianTransposeds_[c+1][i])
 end
 
@@ -299,5 +293,3 @@ function createGeometries!(self::ReferenceElement{T}, codim::Integer) where {T<:
     self.jacobianTransposeds_[codim+1] = [ Matrix{T}(undef, dim-codim, dim) for _ in 1:s ]
     ReferenceElementsImpl.referenceEmbeddings!(type(self).topologyId, dim, codim, self.origins_[codim+1], self.jacobianTransposeds_[codim+1])
 end
-
-end # module ReferenceElements

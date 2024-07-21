@@ -1,5 +1,5 @@
-using DuneGeometry: GeometryType, BasicType, ReferenceElement, AffineGeometry
-using DuneGeometry.ReferenceElements: size, position
+using DuneGeometry: AbstractGeometry, GeometryType, BasicType, ReferenceElement, AffineGeometry
+using DuneGeometry: size, position
 using Test
 
 function isIdentity(I::AbstractArray{T,2}) where {T<:Real}
@@ -13,12 +13,12 @@ function isIdentity(I::AbstractArray{T,2}) where {T<:Real}
   return true
 end
 
-function testGeometry(geo::Geometry{T},gt::GeometryType) where {T<:Real}
+function testGeometry(geo::AbstractGeometry{T},gt::GeometryType) where {T<:Real}
   @test affine(geo)
-  @test AffineGeometries.type(geo) == gt
+  @test type(geo) == gt
 
   ref = referenceElement(geo)
-  @test ReferenceElements.type(ref) == gt
+  @test type(ref) == gt
   @test geo.mydimension == gt.dim
 
   @test corners(geo) == size(ref,geo.mydimension)
@@ -50,14 +50,14 @@ function testGeometry(geo::Geometry{T},gt::GeometryType) where {T<:Real}
            geo.mydimension == 3 ? [ T[i/6.0,j/6.0,k/6.0] for i=0:5 for j=0:5 for k=0:5 ] :
                                   Vector{Vector{T}}(undef,0)
 
-  points = points[ ReferenceElements.checkInside.(Ref(ref), points) ]
+  points = points[ checkInside.(Ref(ref), points) ]
   for p in points
     @test toGlobal(geo,p) == p
     @test toLocal(geo,p) == p
   end
 
   c = position(ref,1,0)
-  @test AffineGeometries.volume(geo) == integrationElement(geo, c) * ReferenceElements.volume(referenceElement(geo))
+  @test volume(geo) == integrationElement(geo, c) * volume(referenceElement(geo))
   @test isIdentity(jacobianInverseTransposed(geo,c) * jacobianTransposed(geo,c))
   @test isIdentity(jacobian(geo,c) * jacobianInverse(geo,c))
 end
@@ -73,7 +73,7 @@ for gt in geometryTypes
   for T in (Float32,Float64,BigFloat)
     println("Testing AffineGeometry{$(T)} $(gt)")
     ref = ReferenceElement{T}(gt)
-    testGeometry(ReferenceElements.geometry(AffineGeometry{T},ref,1,0),gt)
+    testGeometry(geometry(AffineGeometry{T},ref,1,0),gt)
 
     # test constructions
     if isTriangle(gt)
