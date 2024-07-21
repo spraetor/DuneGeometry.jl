@@ -65,7 +65,7 @@ function subTopologyNumbering!(topologyId::UInt32, dim::Integer, codim::Integer,
   len = size(subTopologyId(topologyId, dim, codim, i), dim-codim, subcodim)
 
   if codim == 0
-    return Base.range(UInt(1),length=len)
+    return UInt[UInt(i) for i=1:len]
   elseif subcodim == 0
     return UInt[i]
   else
@@ -97,7 +97,7 @@ function subTopologyNumbering!(topologyId::UInt32, dim::Integer, codim::Integer,
       else
         s = (i <= n+m ? 0 : 1)
         out = subTopologyNumbering!(baseId, dim-1, codim-1, i-(n+s*m), subcodim)
-        for j in eachIndex(out)
+        for j=1:length(out)
           out[j] += nb + s*mb
         end
         return out
@@ -239,8 +239,8 @@ function referenceEmbeddings!(topologyId::UInt32, dim::Integer, codim::Integer,
     baseId = TypesImpl.baseTopologyId(topologyId, dim)
     if TypesImpl.isPrism( topologyId, dim )
       n = (codim < dim ? referenceEmbeddings!(baseId, dim-1, codim, origins, jacobianTransposeds) : 0)
-      if n > 0
-        jacobianTransposeds[1:n][dim-codim,dim] .= 1
+      for i = 1:n
+        jacobianTransposeds[i][dim-codim,dim] = 1
       end
 
       m = referenceEmbeddings!(baseId, dim-1, codim-1,

@@ -1,7 +1,7 @@
 module AffineGeometries
 
 export AffineGeometry
-export affine,type,corners,corner,center,toGlobal,toLocal,integrationElement,volume,jacobian,jacobinTransposed,jacobianInverse,jacobinInverseTransposed,referenceElement
+export affine,type,corners,corner,center,toGlobal,toLocal,integrationElement,volume,jacobian,jacobianTransposed,jacobianInverse,jacobianInverseTransposed,referenceElement
 
 using LinearAlgebra: pinv, det
 using ArgCheck
@@ -174,7 +174,7 @@ Obtain the Jacobian.
 - `x::AbstractVector{S}`: local coordinate to evaluate Jacobian in
 """
 function jacobian(g::AffineGeometry{T}, x::AbstractVector{S}) where {T<:Real,S<:Real}
-  transpose(jacobianTransposed_)
+  transpose(g.jacobianTransposed_)
 end
 
 raw"""
@@ -192,7 +192,7 @@ J^{-1}(x) J(x) = I.
 - `x::AbstractVector{S}`: local coordinate to evaluate Jacobian in
 """
 function jacobianInverse(g::AffineGeometry{T}, x::AbstractVector{S}) where {T<:Real,S<:Real}
-  transpose(jacobianInverseTransposed_)
+  transpose(g.jacobianInverseTransposed_)
 end
 
 "Obtain the reference element the geometry is defined on."
