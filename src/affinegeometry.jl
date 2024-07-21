@@ -1,7 +1,7 @@
 module AffineGeometries
 
 export AffineGeometry
-export affine,type,corners
+export affine,type,corners,corner,center,toGlobal,toLocal,integrationElement,volume,jacobian,jacobinTransposed,jacobianInverse,jacobinInverseTransposed,referenceElement
 
 using LinearAlgebra: pinv, det
 using ArgCheck
@@ -28,11 +28,11 @@ end
 "Create affine geometry from reference element, one vertex, and the Jacobian matrix."
 function AffineGeometry{T}(refElement::ReferenceElement{T}, origin::AbstractVector{T},
                            jt::AbstractArray{T,2}) where {T<:Real}
-  @argcheck Base.size(jt,1) == length(origin)
-  @argcheck Base.size(jt,2) == refElement.dimension
+  @argcheck Base.size(jt,1) == refElement.dimension
+  @argcheck Base.size(jt,2) == length(origin)
 
   jit = pinv(jt)
-  integrationElement = abs(det(jt))
+  integrationElement = sqrt(abs(det(jt*jt')))
   return AffineGeometry{T}(refElement.dimension, length(origin), refElement, origin, jt, jit, integrationElement)
 end
 
@@ -72,12 +72,12 @@ end
 
 "Obtain coordinates of the i-th corner."
 function corner(g::AffineGeometry{T}, i::Integer) where {T<:Real}
-  toGlobal(g, position(g.refElement_, i, mydimension))
+  toGlobal(g, ReferenceElements.position(g.refElement_, i, g.mydimension))
 end
 
 "Obtain the centroid of the mapping's image."
 function center(g::AffineGeometry{T}) where {T<:Real}
-  toGlobal(position(g.refElement_, 0, 0))
+  toGlobal(g, ReferenceElements.position(g.refElement_, 1, 0))
 end
 
 """
@@ -132,7 +132,7 @@ end
 
 "Obtain the volume of the element."
 function volume(g::AffineGeometry{T}) where {T<:Real}
-  g.integrationElement_ * volume(g.refElement_)
+  g.integrationElement_ * ReferenceElements.volume(g.refElement_)
 end
 
 """

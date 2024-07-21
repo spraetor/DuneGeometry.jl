@@ -70,15 +70,15 @@ function subTopologyNumbering!(topologyId::UInt32, dim::Integer, codim::Integer,
     return UInt[i]
   else
     baseId = TypesImpl.baseTopologyId(topologyId, dim)
-    m = size(baseId, dim-1, codim-1)
-    mb = size(baseId, dim-1, codim+subcodim-1)
-    nb = (codim + subcodim < dim ? size(baseId, dim-1, codim+subcodim) : 0)
+    m = size(baseId, dim-1, codim-1) # 1
+    mb = size(baseId, dim-1, codim+subcodim-1) # 2
+    nb = (codim + subcodim < dim ? size(baseId, dim-1, codim+subcodim) : 0) # 0
 
     if TypesImpl.isPrism(topologyId, dim)
-      n = size(baseId, dim-1, codim)
+      n = size(baseId, dim-1, codim) # 2
       if i <= n
         out = zeros(UInt, len)
-        subId = subTopologyId(baseId, dim-1, codim, i)
+        subId = subTopologyId(baseId, dim-1, codim, i) # vertex id
 
         shift = 0
         if codim + subcodim < dim
@@ -86,13 +86,13 @@ function subTopologyNumbering!(topologyId::UInt32, dim::Integer, codim::Integer,
           out[1:shift] = subTopologyNumbering!(baseId, dim-1, codim, i, subcodim)
         end
 
-        ms = size(subId, dim-codim-1, subcodim-1)
-        out[(shift+1):(shift+ms+1)] = subTopologyNumbering!(baseId, dim-1, codim, i, subcodim-1)
+        ms = size(subId, dim-codim-1, subcodim-1) # 1
+        out[(shift+1):(shift+ms)] = subTopologyNumbering!(baseId, dim-1, codim, i, subcodim-1)
         for j = 1:ms
           out[shift + j] += nb
           out[shift + j + ms] = out[shift + j] + mb
         end
-        @assert shift+ms+1 == len
+        @assert shift+2*ms == len
         return out
       else
         s = (i <= n+m ? 0 : 1)
@@ -119,7 +119,7 @@ function subTopologyNumbering!(topologyId::UInt32, dim::Integer, codim::Integer,
             out[j] += mb
           end
         else
-          out[ms+1] = mb
+          out[ms+1] = mb+1
           @assert ms+1 == len
         end
         return out
@@ -305,8 +305,10 @@ function referenceIntegrationOuterNormals!(topologyId::UInt32, dim::Integer,
     else
       normals[1] .= 0
       normals[1][dim] = -1
+      normals2 = [ zeros(T,cdim) for _ = 1:length(normals)-1 ]
       numBaseFaces = referenceIntegrationOuterNormals!(baseId, dim-1,
-        Base.view(origins,2:length(origins)), Base.view(normals,2:length(normals)))
+        Base.view(origins,2:length(origins)), normals2)
+      normals[2:end] .= normals2
       for i = 1:numBaseFaces
         normals[i+1][dim] = sum(normals[i+1] .* origins[i+1])
       end

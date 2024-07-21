@@ -1,5 +1,5 @@
 using DuneGeometry: GeometryType, BasicType, ReferenceElement
-using DuneGeometry.ReferenceElements: size, position, type
+using DuneGeometry.ReferenceElements: size, position, type, volume
 using Test
 
 # import DuneGeometry.ReferenceElements
@@ -69,10 +69,9 @@ end
 
 # test positions
 @test position(ref,1,0) == Float64[1.0/3.0, 1.0/3.0]
-# NOTE: Something with SubEntityInfo.numbering is still wrong.
-# @test position(ref,1,1) == Float64[0.5,0.0]
-# @test position(ref,2,1) == Float64[0.0,0.5]
-# @test position(ref,3,1) == Float64[0.5,0.5]
+@test position(ref,1,1) == Float64[0.5,0.0]
+@test position(ref,2,1) == Float64[0.0,0.5]
+@test position(ref,3,1) == Float64[0.5,0.5]
 @test position(ref,1,2) == Float64[0.0,0.0]
 @test position(ref,2,2) == Float64[1.0,0.0]
 @test position(ref,3,2) == Float64[0.0,1.0]
@@ -88,9 +87,18 @@ end
 
 
 # test geometry
-using DuneGeometry.AffineGeometries: AffineGeometry,affine
-geo = geometry(AffineGeometry{Float64}, ref, 1, 0)
-@test affine(geo)
+using DuneGeometry.AffineGeometries: AffineGeometry,affine,integrationElement
+geo0 = geometry(AffineGeometry{Float64}, ref, 1, 0)
+geo1 = [geometry(AffineGeometry{Float64}, ref, i, 1) for i = 1:3]
+geo2 = [geometry(AffineGeometry{Float64}, ref, i, 2) for i = 1:3]
+
+@test affine(geo0)
+for i = 1:3
+  @test affine(geo1[i])
+end
+for i = 1:3
+  @test affine(geo2[i])
+end
 
 
 # test volume
@@ -98,6 +106,11 @@ geo = geometry(AffineGeometry{Float64}, ref, 1, 0)
 
 
 # test integrationOuterNormal
-# TODO: does not yet work
-# @test integrationOuterNormal(ref,1) == Float64[1.0, 1.0]
-# @test integrationOuterNormal(ref,2) == Float64[1.0, 1.0]
+@test integrationOuterNormal(ref,1) == Float64[0.0, -1.0]
+@test integrationOuterNormal(ref,2) == Float64[-1.0, 0.0]
+@test integrationOuterNormal(ref,3) == Float64[1.0, 1.0]
+
+for i = 1:3
+  n = integrationOuterNormal(ref,i)
+  @test sqrt(sum(n.*n)) == integrationElement(geo1[i], position(ref,i,1))
+end
