@@ -6,6 +6,7 @@ using ..Types
 
 abstract type Geometry{T<:Real} end
 
+# COV_EXCL_START
 
 "Always true: this is an affine geometry."
 function affine(g::Geometry{T})::Bool where {T<:Real} end
@@ -123,5 +124,7 @@ J^{-1}(x) J(x) = I.
 function jacobianInverse(g::Geometry{T}, x::AbstractVector{S}) where {T<:Real,S<:Real}
   transpose(jacobianInverseTransposed(g,x))
 end
+
+# COV_EXCL_STOP
 
 end # module Geometries

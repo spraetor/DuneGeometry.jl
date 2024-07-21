@@ -126,7 +126,6 @@ function subTopologyNumbering!(topologyId::UInt32, dim::Integer, codim::Integer,
       end
     end
   end
-  return UInt[]
 end
 
 function checkInside(topologyId::UInt32, dim::Integer, x::AbstractVector{T}, tolerance::T, factor::T = T(1))::Bool where {T<:Real}
@@ -260,7 +259,8 @@ function referenceEmbeddings!(topologyId::UInt32, dim::Integer, codim::Integer,
         origins[m+1][dim] = 1
         jacobianTransposeds[m+1] .= 0
         return m+1
-      elseif codim < dim
+      else
+        @assert codim < dim
         n = referenceEmbeddings!(baseId, dim-1, codim,
           Base.view(origins,(m+1):length(origins)),
           Base.view(jacobianTransposeds,(m+1):length(jacobianTransposeds)))
@@ -271,7 +271,8 @@ function referenceEmbeddings!(topologyId::UInt32, dim::Integer, codim::Integer,
         return m+n
       end
     end
-  elseif codim == 0
+  else
+    @assert codim == 0
     origins[1] .= 0
     jacobianTransposeds[1] .= 0
     for k = 1:dim
@@ -279,9 +280,6 @@ function referenceEmbeddings!(topologyId::UInt32, dim::Integer, codim::Integer,
     end
     return 1
   end
-
-  # this point should not be reached since all cases are handled before.
-  return 0
 end
 
 
