@@ -91,10 +91,10 @@ function basicType(g::GeometryType)
         BasicType.prism
     elseif !g.none && g.dim == 3 && (g.topologyId | 1) == 0b0011
         BasicType.pyramid
-    elseif g.none && g.topologyId == 1
-        BasicType.extended
-    else
+    elseif g.none && g.topologyId == 0
         BasicType.none
+    else
+        BasicType.extended
     end
 end
 
