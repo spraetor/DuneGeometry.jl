@@ -7,7 +7,7 @@ using ArgCheck
 
 function size(topologyId::UInt32, dim::Integer, codim::Integer)
   @argcheck (dim >= 0) && (topologyId < TypesImpl.numTopologies(dim))
-  @argcheck (0 <= codim) && (codim <= dim)
+  @argcheck 0 <= codim <= dim
 
   if codim > 0
     baseId = TypesImpl.baseTopologyId(topologyId, dim)

@@ -44,10 +44,10 @@ end
 # Arguments
 # - `topologyId::UInt32`: id of the topology
 # - `dim::Integer`: Dimension of the topology
-# - `codim::Integer`: Codimension for which the information is desired (defaults to 0)
+# - `codim::Integer`: Codimension for which the information is desired (defaults to 1)
 function baseTopologyId(topologyId::UInt32, dim::Integer, codim::Integer = 1)::UInt32
   @argcheck (dim >= 0) && (topologyId < numTopologies(dim))
-  @argcheck (0 <= codim) && (codim <= dim)
+  @argcheck 0 <= codim <= dim
   topologyId & ((1 << (dim-codim)) - 1)
 end
 

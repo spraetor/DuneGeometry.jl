@@ -1,7 +1,7 @@
 # types
 export BasicType,GeometryType
 # methods
-export basicType,toId,isVertex,isLine,isTriangle,isQuadrilateral,isTetrahedron,isHexahedron,isPyramid,isPrism,isSimplex,isCube,isConical,isPrismatic
+export basicType,toId,isVertex,isLine,isTriangle,isQuadrilateral,isTetrahedron,isHexahedron,isPyramid,isPrism,isSimplex,isCube,isConical,isPrismatic,isNone
 
 using EnumX
 
@@ -52,7 +52,7 @@ struct GeometryType
     GeometryType() = new(0,true,0)
 
     "Reconstruct a Geometry type from an Id."
-    GeometryType(id::UInt64) = new(id & 0xFF, id & 0x100, id >> 32)
+    GeometryType(id::UInt64) = new(UInt8(id & 0xFF), (id & 0x100) != 0, UInt32(id >> 32))
 
     "Constructor, using the topologyId (integer) and the dimension."
     GeometryType(topologyId::UInt32, dim::Integer) = new(dim,false,topologyId)
@@ -108,6 +108,7 @@ isPyramid(g::GeometryType) = !g.none && g.dim == 3 && (g.topologyId | 1) == 0b00
 isPrism(g::GeometryType) = !g.none && g.dim == 3 && (g.topologyId | 1) == 0b0101
 isSimplex(g::GeometryType) = !g.none && (g.topologyId | 1) == 1
 isCube(g::GeometryType) = !g.none && (xor(g.topologyId, ((1 << g.dim)-1)) >> 1 == 0)
+isNone(g::GeometryType) = g.none
 
 "Return true if entity was constructed with a conical product in the last step."
 isConical(g::GeometryType) = !g.none && (((g.topologyId & ~1) & (1 << (g.dim-1))) == 0)
@@ -119,8 +120,8 @@ isPrismatic(g::GeometryType) = !g.none && (( (g.topologyId | 1) & (1 << (g.dim-1
 isPrismatic(g::GeometryType, step::Int) = !g.none && (( (g.topologyId | 1) & (1 << step)) != 0)
 
 "Check for equality. This method knows that in dimension 0 and 1 all BasicTypes are equal."
-Base.:(==)(g1::GeometryType, g2::GeometryType) = (g1.none == g2.none) &&
-    (g1.none || ( (g1.dim == g2.dim) && ((g1.topologyId >> 1) == (g2.topologyId >> 1)) ))
+Base.:(==)(g1::GeometryType, g2::GeometryType) = (g1.none == g2.none) && (g1.dim == g2.dim) &&
+    (g1.none || ((g1.topologyId >> 1) == (g2.topologyId >> 1)))
 
 "Convert a GeometryType into a string."
 function Base.string(g::GeometryType)
@@ -161,3 +162,25 @@ function Base.show(io::IO, g::GeometryType)
         show(io, "(other [" * bitstring(g.topologyId) * "], " * string(g.dim) * ")")
     end
 end
+
+module GeometryTypes
+using DuneGeometry: BasicType,GeometryType
+
+simplex(dim::Int) = GeometryType(BasicType.simplex, dim)
+cube(dim::Int) = GeometryType(BasicType.cube, dim)
+none(dim::Int) = GeometryType(BasicType.none, dim)
+
+base(gt::GeometryType) = GeometryType(UInt32(gt.topologyId & ((1 << (gt.dim-1))-1)), gt.dim-1, gt.none)
+conicalExtension(gt::GeometryType) = GeometryType(gt.topologyId, gt.dim+1, gt.none)
+prismaticExtension(gt::GeometryType) = GeometryType(UInt32(gt.topologyId | ((1 << gt.dim))), gt.dim+1, gt.none)
+
+const vertex::GeometryType = GeometryType(UInt32(0),0,false)
+const line::GeometryType = GeometryType(UInt32(0),1,false)
+const triangle::GeometryType = simplex(2)
+const quadrilateral::GeometryType = cube(2)
+const tetrahedron::GeometryType = simplex(3)
+const hexahedron::GeometryType = cube(3)
+const prism::GeometryType = GeometryType(BasicType.prism,3)
+const pyramid::GeometryType = GeometryType(BasicType.pyramid,3)
+
+end # module GeometryTypes
