@@ -30,15 +30,15 @@ function toString(basicType::BasicType.T)
     if basicType == BasicType.simplex
         return "simplex"
     elseif basicType == BasicType.cube
-        "cube"
+        return "cube"
     elseif basicType == BasicType.prism
-        "prism"
+        return "prism"
     elseif basicType == BasicType.pyramid
-        "pyramid"
+        return "pyramid"
     elseif basicType == BasicType.extended
-        "extended"
+        return "extended"
     else
-        "none"
+        return "none"
     end
 end
 
@@ -126,23 +126,23 @@ Base.:(==)(g1::GeometryType, g2::GeometryType) = (g1.none == g2.none) && (g1.dim
 "Convert a GeometryType into a string."
 function toString(g::GeometryType)
     if isVertex(g)
-        "vertex"
+        return "vertex"
     elseif isLine(g)
-        "line"
+        return "line"
     elseif isTriangle(g)
-        "triangle"
+        return "triangle"
     elseif isQuadrilateral(g)
-        "quadrilateral"
+        return "quadrilateral"
     elseif isTetrahedron(g)
-        "tetrahedron"
+        return "tetrahedron"
     elseif isPyramid(g)
-        "pyramid"
+        return "pyramid"
     elseif isPrism(g)
-        "prism"
+        return "prism"
     elseif isHexahedron(g)
-        "hexahedron"
+        return "hexahedron"
     else
-        "none"
+        return "none"
     end
 end
 
