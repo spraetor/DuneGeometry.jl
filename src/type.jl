@@ -1,7 +1,7 @@
 # types
 export BasicType,GeometryType
 # methods
-export basicType,toId,isVertex,isLine,isTriangle,isQuadrilateral,isTetrahedron,isHexahedron,isPyramid,isPrism,isSimplex,isCube,isConical,isPrismatic,isNone
+export basicType,toId,isVertex,isLine,isTriangle,isQuadrilateral,isTetrahedron,isHexahedron,isPyramid,isPrism,isSimplex,isCube,isConical,isPrismatic,isNone,toString
 
 using EnumX
 
@@ -26,7 +26,7 @@ basicType(s::String) = Dict(
     "none" => BasicType.none)[s]
 
 "Convert a BasicType into a string."
-function Base.string(basicType::BasicType.T)
+function toString(basicType::BasicType.T)
     if basicType == BasicType.simplex
         "simplex"
     elseif basicType == BasicType.cube
@@ -124,7 +124,7 @@ Base.:(==)(g1::GeometryType, g2::GeometryType) = (g1.none == g2.none) && (g1.dim
     (g1.none || ((g1.topologyId >> 1) == (g2.topologyId >> 1)))
 
 "Convert a GeometryType into a string."
-function Base.string(g::GeometryType)
+function toString(g::GeometryType)
     if isVertex(g)
         "vertex"
     elseif isLine(g)

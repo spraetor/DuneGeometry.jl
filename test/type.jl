@@ -12,12 +12,12 @@ println("Testing BasicType")
 @test basicType("none") == BasicType.none
 
 # check convertion of BAsicType to string
-@test Base.string(BasicType.simplex) == "simplex"
-@test Base.string(BasicType.cube) == "cube"
-@test Base.string(BasicType.prism) == "prism"
-@test Base.string(BasicType.pyramid) == "pyramid"
-@test Base.string(BasicType.extended) == "extended"
-@test Base.string(BasicType.none) == "none"
+@test toString(BasicType.simplex) == "simplex"
+@test toString(BasicType.cube) == "cube"
+@test toString(BasicType.prism) == "prism"
+@test toString(BasicType.pyramid) == "pyramid"
+@test toString(BasicType.extended) == "extended"
+@test toString(BasicType.none) == "none"
 
 
 println("Testing GeometryType...")
@@ -33,6 +33,19 @@ pyramid = GeometryType(BasicType.pyramid,3)
 none0 = GeometryType(BasicType.none,0)
 none1 = GeometryType(BasicType.none,1)
 none2 = GeometryType(BasicType.none,2)
+
+let correctException = false
+  try
+    ext = GeometryType(BasicType.extended,1)
+  catch ArgumentError
+    correctException = true
+  end
+  @test correctException
+end
+
+show(devnull, none0)
+show(devnull, none1)
+show(devnull, none2)
 
 default = GeometryType()
 @test default == none0
@@ -92,14 +105,14 @@ default = GeometryType()
 @test isConical(tet,2)
 
 # check string conversion
-@test Base.string(vertex) == "vertex"
-@test Base.string(line) == "line"
-@test Base.string(tri) == "triangle"
-@test Base.string(quad) == "quadrilateral"
-@test Base.string(tet) == "tetrahedron"
-@test Base.string(hex) == "hexahedron"
-@test Base.string(prism) == "prism"
-@test Base.string(pyramid) == "pyramid"
+@test toString(vertex) == "vertex"
+@test toString(line) == "line"
+@test toString(tri) == "triangle"
+@test toString(quad) == "quadrilateral"
+@test toString(tet) == "tetrahedron"
+@test toString(hex) == "hexahedron"
+@test toString(prism) == "prism"
+@test toString(pyramid) == "pyramid"
 
 # check type comparison
 @test vertex != line
