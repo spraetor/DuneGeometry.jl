@@ -28,7 +28,7 @@ basicType(s::String) = Dict(
 "Convert a BasicType into a string."
 function toString(basicType::BasicType.T)
     if basicType == BasicType.simplex
-        "simplex"
+        return "simplex"
     elseif basicType == BasicType.cube
         "cube"
     elseif basicType == BasicType.prism
