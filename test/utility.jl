@@ -4,7 +4,7 @@ import LinearAlgebra
 
 println("Testing Utilities")
 
-let A = Float64[1 2 3; 4 0.2 6]
+function testUtilities(A::AbstractArray{T,2}) where {T<:Real}
   AAt = A * A'
 
   # test AAT_L
@@ -65,4 +65,14 @@ let A = Float64[1 2 3; 4 0.2 6]
       @test A_pinv[i,j] ≈ A_rightinv[i,j]
     end
   end
+end
+
+
+
+A1 = Float64[1.0;;]
+A2 = Float64[1 2; 4 0.2]
+A3 = Float64[1 2 3; 4 0.2 6]
+
+for A in (A1,A2,A3)
+  testUtilities(A)
 end
