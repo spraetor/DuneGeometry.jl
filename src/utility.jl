@@ -103,18 +103,15 @@ function spdInvA(A::AbstractArray{T,2})::T where {T<:Real}
   return det
 end
 
-"""
-  rightInvA(A, ret)
 
-Compute right pseudo-inverse of matrix `A` ant store the result in `ret`.
-
+# Compute right pseudo-inverse of matrix `A` ant store the result in `ret`.
+#
 # Resturns
-The gramian determinant: `sqrt(det(A'*A))`
-
+# The gramian determinant: `sqrt(det(A'*A))`
+#
 # Arguments
-- `A::AbstractArray{T,2}`: The input matrix with size `(m, n)` where `m <= n`.
-- `ref::AbstractArray{T,2}`: An output matrix with size `(n, m)`.
-"""
+# - `A::AbstractArray{T,2}`: The input matrix with size `(m, n)` where `m <= n`.
+# - `ref::AbstractArray{T,2}`: An output matrix with size `(n, m)`.
 function rightInvA(A::AbstractArray{T,2}, ret::AbstractArray{T,2})::T where {T<:Real}
   m = Base.size(A,1)
   n = Base.size(A,2)
@@ -150,7 +147,7 @@ function rightInvA(A::AbstractArray{T,2}, ret::AbstractArray{T,2})::T where {T<:
   end
 end
 
-"Return the right pseudo-inverse of matrix A."
+# Return the right pseudo-inverse of matrix A.
 function rightInvA(A::AbstractArray{T,2}) where {T<:Real}
   m = Base.size(A,1)
   n = Base.size(A,2)
