@@ -11,7 +11,10 @@ include("referenceelement.impl.jl")
 include("referenceelement.jl")
 
 # geometries
-include("affinegeometry.jl")
+include("utility.jl")
 include("geometry.jl")
+include("multilineargeometry.impl.jl")
+include("multilineargeometry.jl")
+include("affinegeometry.jl")
 
 end # module DuneGeometry
